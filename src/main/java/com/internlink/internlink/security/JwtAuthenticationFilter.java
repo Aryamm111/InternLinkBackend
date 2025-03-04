@@ -13,6 +13,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import com.internlink.internlink.service.UserService;
 import com.internlink.internlink.util.JwtUtil;
 
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,7 +42,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String token = authHeader.substring(7);
-        String username = jwtUtil.extractUsername(token);
+        Claims claims = jwtUtil.extractClaims(token);
+        String username = claims.get("username", String.class);
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userService.loadUserByUsername(username);

@@ -2,7 +2,6 @@ package com.internlink.internlink.service;
 
 import java.util.List;
 
-import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -10,7 +9,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
-import com.internlink.internlink.model.FacultySupervisor;
 import com.internlink.internlink.model.Student;
 
 @Service
@@ -60,17 +58,8 @@ public class StudentService {
     }
 
     public List<Student> getStudentsByFacultySupervisor(String facultySupervisorId) {
-        Query facultyQuery = new Query(
-                ObjectId.isValid(facultySupervisorId) ? Criteria.where("_id").is(new ObjectId(facultySupervisorId))
-                        : Criteria.where("_id").is(facultySupervisorId));
-
-        FacultySupervisor facultySupervisor = mongoTemplate.findOne(facultyQuery, FacultySupervisor.class);
-        if (facultySupervisor == null) {
-            throw new RuntimeException("Faculty Supervisor not found with ID: " + facultySupervisorId);
-        }
-
-        Query studentQuery = new Query(Criteria.where("supervisorId").is(facultySupervisor.getId()));
-        return mongoTemplate.find(studentQuery, Student.class);
+        return mongoTemplate.find(new Query(Criteria.where("facultySupervisorId").is(facultySupervisorId)),
+                Student.class);
     }
 
     public List<Student> getStudentsByCompanySupervisor(String companySupervisorId) {

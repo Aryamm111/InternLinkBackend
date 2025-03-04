@@ -52,8 +52,8 @@ public class StudentController {
         }
 
         List<Student> students = supervisorRole.equalsIgnoreCase("facultySupervisor")
-                ? studentService.getStudentsByFacultySupervisor(supervisorId)
-                : studentService.getStudentsByCompanySupervisor(supervisorId);
+                ? studentService.getStudentsByFacultySupervisor(userId)
+                : studentService.getStudentsByCompanySupervisor(userId);
 
         return ResponseEntity.ok(students);
     }
@@ -102,19 +102,16 @@ public class StudentController {
             @PathVariable String studentId,
             @RequestHeader("Authorization") String authHeader) {
 
-        // Extract supervisor ID from the JWT token
         String token = authHeader.substring(7);
         Claims claims = jwtUtil.extractClaims(token);
 
         String supervisorRole = claims.get("role", String.class);
         String supervisorId = claims.getSubject();
 
-        // Check if the user is a faculty supervisor
         if (!supervisorRole.equalsIgnoreCase("facultySupervisor")) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only faculty supervisors can assign students.");
         }
 
-        // Assign the faculty supervisor to the student
         Student student = studentService.assignFacultySupervisor(studentId, supervisorId);
         if (student == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student not found");
