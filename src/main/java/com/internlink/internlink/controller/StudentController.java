@@ -8,7 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -57,36 +56,6 @@ public class StudentController {
         return ResponseEntity.ok(students);
     }
 
-    // @GetMapping("/{studentId}")
-    // @PreAuthorize("hasRole('FACULTY_SUPERVISOR') or
-    // hasRole('COMPANY_SUPERVISOR')")
-    // public ResponseEntity<?> getStudentById(@PathVariable String studentId) {
-    // String userId = authService.getAuthenticatedUserId(); // Get authenticated
-    // user ID
-    // String supervisorRole = authService.getAuthenticatedUserRole(); // Get role
-
-    // if (userId == null) {
-    // return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-    // }
-
-    // Student student = studentService.getStudentById(studentId);
-    // if (student == null) {
-    // return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student not found");
-    // }
-
-    // boolean isAssigned = (supervisorRole.equals("ROLE_FACULTY_SUPERVISOR")
-    // && userId.equals(student.getFacultySupervisorId())) ||
-    // (supervisorRole.equals("ROLE_COMPANY_SUPERVISOR") &&
-    // userId.equals(student.getCompanySupervisorId()));
-
-    // if (!isAssigned) {
-    // return ResponseEntity.status(HttpStatus.FORBIDDEN)
-    // .body("Access denied: You are not assigned to this student");
-    // }
-
-    // return ResponseEntity.ok(student);
-    // }
-
     @PostMapping("/register")
     public ResponseEntity<String> registerStudent(@RequestBody Student student) {
         student.setPassword(passwordEncoder.encode(student.getPassword()));
@@ -96,20 +65,20 @@ public class StudentController {
     }
 
     @PutMapping("/{studentId}")
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<?> updateStudent(@PathVariable String studentId, @RequestBody Student updatedStudent) {
-        Student student = studentService.updateStudent(studentId, updatedStudent);
+
+        String authenticatedStudentId = authService.getAuthenticatedUserId();
+        String id = studentService.getStudentIdByMongoId(authenticatedStudentId);
+
+        if (id == null || !id.equals(studentId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("You are not authorized to update this profile" + studentId + " " + id);
+        }
+
+        Student student = studentService.updateStudent(id, updatedStudent);
         return (student != null) ? ResponseEntity.ok(student)
                 : ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student not found");
-    }
-
-    @DeleteMapping("/{studentId}")
-    public ResponseEntity<String> deleteStudent(@PathVariable String studentId) {
-        Student student = studentService.getStudentById(studentId);
-        if (student == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student not found");
-        }
-        studentService.deleteStudent(studentId);
-        return ResponseEntity.ok("Student deleted successfully");
     }
 
     @GetMapping("/{studentId}/name")
