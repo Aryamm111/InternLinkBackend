@@ -59,8 +59,6 @@ public class SecurityConfig {
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
 
-        // Add logging to confirm the UserDetailsService and PasswordEncoder are set
-        // correctly
         System.out.println("AuthenticationManager configured with UserDetailsService: " + userDetailsService);
         System.out.println("AuthenticationManager configured with PasswordEncoder: " + passwordEncoder());
 
@@ -71,7 +69,7 @@ public class SecurityConfig {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            return userDetails.getUsername(); // Assuming username is userId
+            return userDetails.getUsername();
         }
         return null;
     }

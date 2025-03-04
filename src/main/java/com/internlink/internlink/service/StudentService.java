@@ -72,7 +72,7 @@ public class StudentService {
         Student student = mongoTemplate.findOne(query, Student.class);
 
         if (student == null) {
-            return null; // Student not found
+            return null;
         }
 
         Update update = new Update().set("facultySupervisorId", facultySupervisorId);
@@ -83,15 +83,15 @@ public class StudentService {
 
     public boolean assignCompanySupervisorToStudents(String supervisorId, List<String> studentIds) {
         if (studentIds == null || studentIds.isEmpty()) {
-            return false; // No students provided
+            return false;
         }
 
-        Query query = new Query(Criteria.where("studentId").in(studentIds)); // Find students by IDs
-        Update update = new Update().set("companySupervisorId", supervisorId); // Set company supervisor
+        Query query = new Query(Criteria.where("studentId").in(studentIds));
+        Update update = new Update().set("companySupervisorId", supervisorId);
 
         var result = mongoTemplate.updateMulti(query, update, Student.class); // Apply update
 
-        return result.getModifiedCount() > 0; // Return true if any students were updated
+        return result.getModifiedCount() > 0;
     }
 
     public String getStudentIdByMongoId(String mongoId) {
@@ -99,11 +99,10 @@ public class StudentService {
         Query query = new Query(Criteria.where("_id").is(mongoId));
         Student student = mongoTemplate.findOne(query, Student.class);
 
-        // If student is found, return the custom studentId
         if (student != null) {
-            return student.getStudentId(); // Assuming custom studentId field exists
+            return student.getStudentId();
         }
 
-        return null; // Return null if student is not found
+        return null;
     }
 }

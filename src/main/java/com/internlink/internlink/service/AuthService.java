@@ -9,7 +9,7 @@ import com.internlink.internlink.model.User;
 @Service
 public class AuthService {
 
-    private final UserService userService; // Inject UserService
+    private final UserService userService;
 
     public AuthService(UserService userService) {
         this.userService = userService;
@@ -17,13 +17,13 @@ public class AuthService {
 
     public String getAuthenticatedUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName(); // Get authenticated username
-        User user = userService.findByUsername(username); // Fetch user details
-        return (user != null) ? user.getId() : null; // Return user ID
+        String username = authentication.getName();
+        User user = userService.findByUsername(username);
+        return (user != null) ? user.getId() : null;
     }
 
     public String getAuthenticatedUserRole() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication.getAuthorities().iterator().next().getAuthority(); // Get role
+        return authentication.getAuthorities().iterator().next().getAuthority();
     }
 }

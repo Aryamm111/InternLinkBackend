@@ -30,7 +30,7 @@ public class UserController {
     private UserService userService;
 
     @Autowired
-    private AuthenticationManager authenticationManager; // Inject AuthenticationManager
+    private AuthenticationManager authenticationManager;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest, HttpServletRequest request) {
@@ -71,7 +71,7 @@ public class UserController {
 
     @GetMapping("/protected")
     public ResponseEntity<?> protectedEndpoint() {
-        // Get the currently authenticated user from the security context
+
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         if (principal instanceof User) {

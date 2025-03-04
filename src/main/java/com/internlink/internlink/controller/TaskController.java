@@ -29,7 +29,7 @@ public class TaskController {
     @GetMapping("/tasks")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<?> getTasksForStudent() {
-        // Get the authenticated user's Mongo _id (not custom studentId yet)
+
         String Id = authService.getAuthenticatedUserId();
 
         // Use StudentService to fetch the custom studentId
@@ -39,7 +39,6 @@ public class TaskController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student not found");
         }
 
-        // Fetch tasks assigned to the student using the TaskService
         List<Task> tasks = taskService.getTasksForStudent(studentId);
 
         if (tasks.isEmpty()) {
