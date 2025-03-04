@@ -1,20 +1,26 @@
 package com.internlink.internlink.controller;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.internlink.internlink.dto.LoginRequest;
 import com.internlink.internlink.model.User;
 import com.internlink.internlink.service.UserService;
-import com.internlink.internlink.util.JwtUtil;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/user")
@@ -24,35 +30,55 @@ public class UserController {
     private UserService userService;
 
     @Autowired
-    private JwtUtil jwtUtil;
+    private AuthenticationManager authenticationManager; // Inject AuthenticationManager
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        String username = loginRequest.getUsername();
-        String password = loginRequest.getPassword();
-        String token = userService.login(username, password);
-        if (token != null) {
-            User user = userService.findByUsername(username);
-            return ResponseEntity.ok(Map.of(
-                    "token", token,
-                    "userRole", user.getUserRole(),
-                    "userId", user.getId()));
-        } else {
-            return ResponseEntity.status(401).body("Invalid credentials.");
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest, HttpServletRequest request) {
+        System.out.println("Login endpoint reached!");
+
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        // Explicitly set the authentication in the session
+        request.getSession().setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
+
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/session")
+    public ResponseEntity<?> getSessionUser(HttpServletRequest request) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        System.out.println("Auth object: " + auth);
+
+        if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
+            System.out.println("User is not authenticated. Returning 401.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"error\": \"No active session\"}");
         }
+
+        User user = (User) auth.getPrincipal();
+        System.out.println("Authenticated User: " + user.getUsername());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("userId", user.getId());
+        response.put("username", user.getUsername());
+        response.put("role", user.getUserRole());
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/protected")
-    public ResponseEntity<?> protectedEndpoint(@RequestHeader(value = "Authorization", required = false) String token) {
-        if (token == null || !token.startsWith("Bearer ")) {
-            return ResponseEntity.status(400).body("Authorization token is missing or malformed.");
+    public ResponseEntity<?> protectedEndpoint() {
+        // Get the currently authenticated user from the security context
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        if (principal instanceof User) {
+            String username = ((User) principal).getUsername();
+            return ResponseEntity.ok("Access granted for user: " + username);
         }
 
-        try {
-            String username = jwtUtil.extractUsername(token.replace("Bearer ", ""));
-            return ResponseEntity.ok("Access granted for user: " + username);
-        } catch (Exception e) {
-            return ResponseEntity.status(403).body("Invalid or expired token.");
-        }
+        return ResponseEntity.status(403).body("Access denied.");
     }
 }

@@ -15,21 +15,20 @@ public class Task {
     private TaskStatus status;
     private String assignedStudentId;
     private String supervisorId;
-    private String internshipId;
     private LocalDate dueDate;
 
     public Task() {
         this.status = TaskStatus.TO_DO;
     }
 
-    public Task(String title, String description, String assignedStudentId, String supervisorId, String internshipId,
+    public Task(String title, String description, String assignedStudentId, String supervisorId,
             LocalDate dueDate) {
         this.title = title;
         this.description = description;
         this.status = TaskStatus.TO_DO;
         this.assignedStudentId = assignedStudentId;
         this.supervisorId = supervisorId;
-        this.internshipId = internshipId;
+
         this.dueDate = dueDate;
     }
 
@@ -80,14 +79,6 @@ public class Task {
 
     public void setSupervisorId(String supervisorId) {
         this.supervisorId = supervisorId;
-    }
-
-    public String getInternshipId() {
-        return internshipId;
-    }
-
-    public void setInternshipId(String internshipId) {
-        this.internshipId = internshipId;
     }
 
     public LocalDate getDueDate() {

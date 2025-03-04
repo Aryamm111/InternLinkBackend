@@ -11,17 +11,30 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.internlink.internlink.model.User;
-import com.internlink.internlink.util.JwtUtil;
 
 @Service
 public class UserService implements UserDetailsService {
 
+    private final MongoTemplate mongoTemplate;
+    private final PasswordEncoder passwordEncoder;
+
     @Autowired
-    private MongoTemplate mongoTemplate;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    @Autowired
-    private JwtUtil jwtUtil;
+    public UserService(MongoTemplate mongoTemplate, PasswordEncoder passwordEncoder) {
+        this.mongoTemplate = mongoTemplate;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        System.out.println("loadUserByUsername called with username: " + username); // Debug log
+
+        User user = findByUsername(username);
+        if (user == null) {
+            throw new UsernameNotFoundException("User not found: " + username);
+        }
+
+        return user;
+    }
 
     public User findByUsername(String username) {
         String[] collections = { "students", "facultySupervisors", "companySupervisors", "hrManagers" };
@@ -38,30 +51,16 @@ public class UserService implements UserDetailsService {
         return null;
     }
 
-    public String login(String username, String password) {
-        User foundUser = findByUsername(username);
-        if (foundUser != null) {
-            System.out.println("User found: " + foundUser.getUsername());
+    // Register or create a new user with password encoding
+    public User createUser(String username, String password, String role) {
+        String encodedPassword = passwordEncoder.encode(password);
 
-            if (passwordEncoder.matches(password, foundUser.getPassword())) {
-                // ✅ Pass userId, username, and role correctly
-                return jwtUtil.generateToken(foundUser.getId(), foundUser.getUsername(), foundUser.getUserRole());
-            }
-        }
+        User user = new User();
+        user.setUsername(username);
+        user.setPassword(encodedPassword);
+        user.setUserRole(role);
 
-        System.out.println("No user found or invalid password.");
-        return null;
-    }
-
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = findByUsername(username);
-        if (user == null) {
-            throw new UsernameNotFoundException("User not found: " + username);
-        }
-        return org.springframework.security.core.userdetails.User.withUsername(user.getUsername())
-                .password(user.getPassword())
-                .authorities(user.getUserRole())
-                .build();
+        mongoTemplate.save(user);
+        return user;
     }
 }
