@@ -23,7 +23,7 @@ public class ApplicationService {
         this.mongoTemplate = mongoTemplate;
     }
 
-    //  جلب جميع الطلبات
+    // جلب جميع الطلبات
     public List<Application> getAllApplications() {
         return mongoTemplate.findAll(Application.class);
     }
@@ -33,41 +33,43 @@ public class ApplicationService {
         return Optional.ofNullable(mongoTemplate.findById(id, Application.class));
     }
 
-    //  جلب جميع الطلبات لطالب معين
+    // جلب جميع الطلبات لطالب معين
     public List<Application> getApplicationsByStudent(String studentId) {
         Query query = new Query(Criteria.where("studentId").is(studentId));
         return mongoTemplate.find(query, Application.class);
     }
 
-    //  إنشاء طلب جديد مع التحقق من الوظيفة
-    public ResponseEntity<?> createApplication(Application application) {
-        InternshipOpportunity opportunity = mongoTemplate.findById(application.getOpportunityId(), InternshipOpportunity.class);
+    // إنشاء طلب جديد مع التحقق من الوظيفة
+    // public ResponseEntity<?> createApplication(Application application) {
+    // InternshipOpportunity opportunity =
+    // mongoTemplate.findById(application.getOpportunityId(),
+    // InternshipOpportunity.class);
 
-        if (opportunity == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(" No jobs available, you cannot apply!");
-        }
+    // if (opportunity == null) {
+    // return ResponseEntity.status(HttpStatus.NOT_FOUND).body(" No jobs available,
+    // you cannot apply!");
+    // }
 
-        application.setStatus(ApplicationStatus.PENDING);
-        application.setStatusTimestamp(LocalDateTime.now());
-        mongoTemplate.save(application);
-        return ResponseEntity.status(HttpStatus.CREATED).body(application);
-    }
+    // application.setStatus(ApplicationStatus.PENDING);
+    // application.setStatusTimestamp(LocalDateTime.now());
+    // mongoTemplate.save(application);
+    // return ResponseEntity.status(HttpStatus.CREATED).body(application);
+    // }
 
-    //  تحديث حالة الطلب
+    // تحديث حالة الطلب
     public Optional<Application> updateApplicationStatus(String id, ApplicationStatus newStatus) {
         Query query = new Query(Criteria.where("applicationId").is(id));
         Update update = new Update()
-            .set("status", newStatus)
-            .set("statusTimestamp", LocalDateTime.now());
+                .set("status", newStatus)
+                .set("statusTimestamp", LocalDateTime.now());
 
         Application updatedApplication = mongoTemplate.findAndModify(query, update, Application.class);
         return Optional.ofNullable(updatedApplication);
     }
 
-    //  حذف طلب معين
+    // حذف طلب معين
     public boolean deleteApplication(String id) {
         Query query = new Query(Criteria.where("applicationId").is(id));
         return mongoTemplate.remove(query, Application.class).getDeletedCount() > 0;
     }
 }
-

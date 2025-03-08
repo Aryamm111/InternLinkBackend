@@ -32,7 +32,6 @@ public class TaskController {
 
         String Id = authService.getAuthenticatedUserId();
 
-        // Use StudentService to fetch the custom studentId
         String studentId = studentService.getStudentIdByMongoId(Id);
 
         if (studentId == null) {
