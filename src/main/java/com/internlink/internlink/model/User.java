@@ -3,6 +3,7 @@ package com.internlink.internlink.model;
 import java.util.Collection;
 import java.util.List;
 
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -11,8 +12,10 @@ public class User implements UserDetails {
     private String username;
     private String password;
     private String userRole;
+
+    @Indexed(unique = true)
     private String email;
-    private String name;// Role like "STUDENT", "FACULTY_SUPERVISOR", etc.
+    private String name;
 
     public User() {
     }
@@ -34,7 +37,7 @@ public class User implements UserDetails {
 
     @Override
     public String getUsername() {
-        return username;
+        return email;
     }
 
     public void setUsername(String username) {

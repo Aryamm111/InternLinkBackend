@@ -9,6 +9,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import static org.springframework.security.config.Customizer.withDefaults;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -24,7 +25,7 @@ import com.internlink.internlink.service.UserService;
 
 @Configuration
 @EnableWebSecurity
-
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -35,13 +36,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/user/login").permitAll()
                         .requestMatchers("/api/user/session").permitAll()
-                        .requestMatchers("/api/**").permitAll()
-                        .requestMatchers("/api/internships/**").permitAll()
                         .requestMatchers("/api/students/register").permitAll()
-                        .requestMatchers("/facultySupervisor/register").permitAll()
-                        .requestMatchers("/company-supervisors/register").permitAll()
-                        .requestMatchers("/api/students").permitAll()
-                        .requestMatchers("/api/tasks").permitAll()
+                        .requestMatchers("/api/internships/create").permitAll()
+                        .requestMatchers("/api/applications/{internshipId}/apply").permitAll()
+                        .requestMatchers("/api/internships/{internshipId}/view").permitAll()
+                        .requestMatchers("/api/applications/{applicationId}/update-status").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS));
 
@@ -58,9 +57,10 @@ public class SecurityConfig {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
-
-        System.out.println("AuthenticationManager configured with UserDetailsService: " + userDetailsService);
-        System.out.println("AuthenticationManager configured with PasswordEncoder: " + passwordEncoder());
+        // System.out.println("AuthenticationManager configured with UserDetailsService:
+        // " + userDetailsService);
+        // System.out.println("AuthenticationManager configured with PasswordEncoder: "
+        // + passwordEncoder());
 
         return new ProviderManager(List.of(provider));
     }

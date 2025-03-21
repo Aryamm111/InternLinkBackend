@@ -25,23 +25,23 @@ public class UserService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        System.out.println("loadUserByUsername called with username: " + username); // Debug log
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        System.out.println("loadUserByEmail called with email: " + email); // Debug log
 
-        User user = findByUsername(username);
+        User user = findByEmail(email); // Use email instead of username
         if (user == null) {
-            throw new UsernameNotFoundException("User not found: " + username);
+            throw new UsernameNotFoundException("User not found with email: " + email);
         }
 
-        return user;
+        return user; // Return the User object directly (it now implements UserDetails)
     }
 
-    public User findByUsername(String username) {
+    public User findByEmail(String email) {
         String[] collections = { "students", "facultySupervisors", "companySupervisors", "hrManagers" };
 
         for (String collection : collections) {
             Query query = new Query();
-            query.addCriteria(Criteria.where("username").is(username));
+            query.addCriteria(Criteria.where("email").is(email)); // Use `email` instead of `username`
 
             User foundUser = mongoTemplate.findOne(query, User.class, collection);
             if (foundUser != null) {
@@ -62,5 +62,9 @@ public class UserService implements UserDetailsService {
 
         mongoTemplate.save(user);
         return user;
+    }
+
+    public boolean userExistsByEmail(String email) {
+        return mongoTemplate.exists(new Query(Criteria.where("email").is(email)), User.class);
     }
 }

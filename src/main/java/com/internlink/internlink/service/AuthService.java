@@ -17,8 +17,8 @@ public class AuthService {
 
     public String getAuthenticatedUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
-        User user = userService.findByUsername(username);
+        String email = authentication.getName();
+        User user = userService.findByEmail(email);
         return (user != null) ? user.getId() : null;
     }
 

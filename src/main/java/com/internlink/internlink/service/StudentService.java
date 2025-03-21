@@ -95,7 +95,6 @@ public class StudentService {
     }
 
     public String getStudentIdByMongoId(String mongoId) {
-        // Query MongoDB for the student using Mongo-generated _id
         Query query = new Query(Criteria.where("_id").is(mongoId));
         Student student = mongoTemplate.findOne(query, Student.class);
 
