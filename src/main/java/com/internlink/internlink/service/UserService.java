@@ -26,14 +26,14 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        System.out.println("loadUserByEmail called with email: " + email); // Debug log
+        System.out.println("loadUserByEmail called with email: " + email);
 
-        User user = findByEmail(email); // Use email instead of username
+        User user = findByEmail(email); // to use email instead of username
         if (user == null) {
             throw new UsernameNotFoundException("User not found with email: " + email);
         }
 
-        return user; // Return the User object directly (it now implements UserDetails)
+        return user;
     }
 
     public User findByEmail(String email) {
@@ -41,7 +41,7 @@ public class UserService implements UserDetailsService {
 
         for (String collection : collections) {
             Query query = new Query();
-            query.addCriteria(Criteria.where("email").is(email)); 
+            query.addCriteria(Criteria.where("email").is(email));
 
             User foundUser = mongoTemplate.findOne(query, User.class, collection);
             if (foundUser != null) {
@@ -51,7 +51,6 @@ public class UserService implements UserDetailsService {
         return null;
     }
 
-    // Register or create a new user with password encoding
     public User createUser(String username, String password, String role) {
         String encodedPassword = passwordEncoder.encode(password);
 

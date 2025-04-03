@@ -12,25 +12,24 @@ public class Task {
     private String id;
     private String title;
     private String description;
-    private boolean completed; // Change status to boolean completed
+    private boolean completed;
     private String assignedStudentId;
     private String supervisorId;
     private LocalDate dueDate;
 
     public Task() {
-        this.completed = false; // Default is not completed
+        this.completed = false;
     }
 
     public Task(String title, String description, String assignedStudentId, String supervisorId, LocalDate dueDate) {
         this.title = title;
         this.description = description;
-        this.completed = false; // Default to not completed
+        this.completed = false;
         this.assignedStudentId = assignedStudentId;
         this.supervisorId = supervisorId;
         this.dueDate = dueDate;
     }
 
-    // Getters and Setters
     public String getId() {
         return id;
     }
