@@ -41,7 +41,7 @@ public class UserService implements UserDetailsService {
 
         for (String collection : collections) {
             Query query = new Query();
-            query.addCriteria(Criteria.where("email").is(email)); // Use `email` instead of `username`
+            query.addCriteria(Criteria.where("email").is(email)); 
 
             User foundUser = mongoTemplate.findOne(query, User.class, collection);
             if (foundUser != null) {
