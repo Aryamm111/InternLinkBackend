@@ -26,6 +26,11 @@ public class StudentService {
         return mongoTemplate.findOne(query, Student.class);
     }
 
+    public boolean existsById(String studentId) {
+        // Check existence based on custom studentId (_id)
+        return mongoTemplate.exists(new Query(Criteria.where("_id").is(studentId)), Student.class);
+    }
+
     public Student register(Student student) {
         return mongoTemplate.save(student);
     }
