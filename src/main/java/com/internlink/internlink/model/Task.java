@@ -12,23 +12,21 @@ public class Task {
     private String id;
     private String title;
     private String description;
-    private TaskStatus status;
+    private boolean completed; // Change status to boolean completed
     private String assignedStudentId;
     private String supervisorId;
     private LocalDate dueDate;
 
     public Task() {
-        this.status = TaskStatus.TO_DO;
+        this.completed = false; // Default is not completed
     }
 
-    public Task(String title, String description, String assignedStudentId, String supervisorId,
-            LocalDate dueDate) {
+    public Task(String title, String description, String assignedStudentId, String supervisorId, LocalDate dueDate) {
         this.title = title;
         this.description = description;
-        this.status = TaskStatus.TO_DO;
+        this.completed = false; // Default to not completed
         this.assignedStudentId = assignedStudentId;
         this.supervisorId = supervisorId;
-
         this.dueDate = dueDate;
     }
 
@@ -57,12 +55,12 @@ public class Task {
         this.description = description;
     }
 
-    public TaskStatus getStatus() {
-        return status;
+    public boolean isCompleted() {
+        return completed;
     }
 
-    public void setStatus(TaskStatus status) {
-        this.status = status;
+    public void setCompleted(boolean completed) {
+        this.completed = completed;
     }
 
     public String getAssignedStudentId() {
