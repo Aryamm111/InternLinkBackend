@@ -27,7 +27,6 @@ public class StudentService {
     }
 
     public boolean existsById(String studentId) {
-        // Check existence based on custom studentId (_id)
         return mongoTemplate.exists(new Query(Criteria.where("_id").is(studentId)), Student.class);
     }
 
