@@ -1,62 +1,47 @@
 package com.internlink.internlink.model;
 
+import java.time.LocalDateTime;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.Date;
-
-@Document(collection = "Reports")
+@Document(collection = "report")
 public class Report {
 
     @Id
-    private int reportID;
-    private String studentName;
-    private Date dueDate;
-    private String file; // Path or URL to the uploaded file (MongoDB doesn't support java.io.File directly)
+    private String id;
+    private String studentId;
+    private String facultySupervisorId;
+    private String companySupervisorId;
+    private String fileUrl;
     private boolean isVerified;
+    private String studentName;
 
-    // Constructors
-    public Report() {}
+    private LocalDateTime submissionDate;
 
-    public Report(int reportID, String studentName, Date dueDate, String file, boolean isVerified) {
-        this.reportID = reportID;
-        this.studentName = studentName;
-        this.dueDate = dueDate;
-        this.file = file;
-        this.isVerified = isVerified;
+    // Getters and Setters
+    public String getId() {
+        return id;
     }
 
-
-    public int getReportID() {
-        return reportID;
+    public void setId(String id) {
+        this.id = id;
     }
 
-    public void setReportID(int reportID) {
-        this.reportID = reportID;
+    public String getStudentId() {
+        return studentId;
     }
 
-    public String getStudentName() {
-        return studentName;
+    public void setStudentId(String studentId) {
+        this.studentId = studentId;
     }
 
-    public void setStudentName(String studentName) {
-        this.studentName = studentName;
+    public String getFileUrl() {
+        return fileUrl;
     }
 
-    public Date getDueDate() {
-        return dueDate;
-    }
-
-    public void setDueDate(Date dueDate) {
-        this.dueDate = dueDate;
-    }
-
-    public String getFile() {
-        return file;
-    }
-
-    public void setFile(String file) {
-        this.file = file;
+    public void setFileUrl(String fileUrl) {
+        this.fileUrl = fileUrl;
     }
 
     public boolean isVerified() {
@@ -67,11 +52,35 @@ public class Report {
         isVerified = verified;
     }
 
-    public String getFilePath() {
-        return file;
+    public String getFacultySupervisorId() {
+        return facultySupervisorId;
     }
 
-    public void setVerified() {
-        this.isVerified = true;
+    public void setFacultySupervisorId(String facultySupervisorId) {
+        this.facultySupervisorId = facultySupervisorId;
+    }
+
+    public String getCompanySupervisorId() {
+        return companySupervisorId;
+    }
+
+    public void setCompanySupervisorId(String companySupervisorId) {
+        this.companySupervisorId = companySupervisorId;
+    }
+
+    public LocalDateTime getSubmissionDate() {
+        return submissionDate;
+    }
+
+    public void setSubmissionDate(LocalDateTime submissionDate) {
+        this.submissionDate = submissionDate;
+    }
+
+    public String getStudentName() {
+        return studentName;
+    }
+
+    public void setStudentName(String studentName) {
+        this.studentName = studentName;
     }
 }
