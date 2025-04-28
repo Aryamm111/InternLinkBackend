@@ -80,7 +80,8 @@ public class ApplicationController {
     @GetMapping("/accepted-students")
     @PreAuthorize("hasRole('HR_MANAGER')")
     public ResponseEntity<List<Student>> getAcceptedStudents() {
-        List<Student> students = applicationService.getAcceptedStudents();
+        String hrManagerId = authService.getAuthenticatedUserId();
+        List<Student> students = applicationService.getAcceptedStudentsForHr(hrManagerId);
         return ResponseEntity.ok(students);
     }
 

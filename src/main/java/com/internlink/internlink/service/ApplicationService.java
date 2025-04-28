@@ -5,11 +5,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
+import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.aggregation.ConvertOperators;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -118,20 +124,35 @@ public class ApplicationService {
         }
     }
 
-    public List<Student> getAcceptedStudents() {
-        // Step 1: Get applications with status = "Accepted"
-        Query acceptedQuery = new Query(Criteria.where("status").is("Accepted"));
-        List<Application> acceptedApps = mongoTemplate.find(acceptedQuery, Application.class, "applications");
+    public List<Student> getAcceptedStudentsForHr(String hrManagerId) {
+        // First, get the list of accepted applications for internships uploaded by this
+        // HR
+        Aggregation aggregation = Aggregation.newAggregation(
+                Aggregation.addFields()
+                        .addFieldWithValue("internshipIdObj",
+                                ConvertOperators.ToObjectId.toObjectId("$internshipId"))
+                        .build(),
 
-        // Step 2: Extract unique studentIds
-        List<String> studentIds = acceptedApps.stream()
-                .map(Application::getStudentId)
-                .distinct()
-                .toList();
+                Aggregation.lookup("internships", "internshipIdObj", "_id", "internshipData"),
+                Aggregation.unwind("internshipData"),
+                Aggregation.match(
+                        Criteria.where("internshipData.uploadedBy").is(hrManagerId)
+                                .and("status").is("Accepted")),
+                Aggregation.project("studentId") // if you want only studentId
+        );
 
-        // Step 3: Find full student objects
-        Query studentQuery = new Query(Criteria.where("_id").in(studentIds));
-        return mongoTemplate.find(studentQuery, Student.class, "students");
+        AggregationResults<Document> results = mongoTemplate.aggregate(aggregation, "applications", Document.class);
+        List<String> studentIds = results.getMappedResults().stream()
+                .map(doc -> doc.getString("studentId"))
+                .collect(Collectors.toList());
+
+        if (studentIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // Now, fetch students based on those IDs
+        Query query = new Query(Criteria.where("_id").in(studentIds));
+        return mongoTemplate.find(query, Student.class);
     }
 
     public Application getApplicationById(String applicationId) {

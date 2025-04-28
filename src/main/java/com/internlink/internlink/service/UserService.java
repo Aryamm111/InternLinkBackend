@@ -38,6 +38,46 @@ public class UserService implements UserDetailsService {
         return user;
     }
 
+    public String resolveUserId(String input) {
+        if (input.contains("@")) {
+            // Search by email
+            User user = findByEmail(input);
+            if (user != null) {
+                return user.getId();
+            }
+        } else {
+            // Search by ID across all collections
+            User user = findUserByIds(input);
+            if (user != null) {
+                return user.getId();
+            }
+        }
+        return null;
+    }
+
+    public User findUserByIds(String id) {
+        long startTime = System.nanoTime();
+
+        String[] collections = { "students", "facultySupervisors", "companySupervisors", "hrmanagers" };
+
+        for (String collection : collections) {
+            User foundUser = mongoTemplate.findById(id, User.class, collection);
+            if (foundUser != null) {
+                long endTime = System.nanoTime();
+                System.out.println("Sequential Execution Time: " + (endTime - startTime) + " ns");
+                return foundUser;
+            }
+        }
+
+        long endTime = System.nanoTime();
+        System.out.println("Sequential Execution Time: " + (endTime - startTime) + " ns");
+        return null;
+    }
+
+    private boolean isEmail(String input) {
+        return input.contains("@"); // simple email detection
+    }
+
     @Cacheable(value = "usersByEmail", key = "#email")
     public User findByEmail(String email) {
         long startTime = System.nanoTime();
@@ -70,6 +110,21 @@ public class UserService implements UserDetailsService {
             }
         }
         return false;
+    }
+
+    public String findEmailById(String id) {
+        String[] collections = { "facultySupervisors", "companySupervisors" };
+
+        for (String collection : collections) {
+            Query query = new Query(Criteria.where("_id").is(id));
+            query.fields().include("email"); // Only include the email field
+            User user = mongoTemplate.findOne(query, User.class, collection);
+            if (user != null) {
+                return user.getEmail();
+            }
+        }
+
+        return null; // Not found
     }
 
     @CacheEvict(value = "userDetails", key = "#email")

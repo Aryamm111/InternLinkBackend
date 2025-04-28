@@ -3,6 +3,7 @@ package com.internlink.internlink.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,8 +18,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.internlink.internlink.model.Report;
+import com.internlink.internlink.model.Student;
 import com.internlink.internlink.service.AuthService;
 import com.internlink.internlink.service.ReportService;
+import com.internlink.internlink.service.StudentService;
 
 @CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 @RestController
@@ -28,6 +31,8 @@ public class ReportController {
     @Autowired
     private ReportService reportService;
     @Autowired
+    private StudentService studentService;
+    @Autowired
     private AuthService authService;
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -35,10 +40,17 @@ public class ReportController {
     public ResponseEntity<String> uploadReport(@RequestParam("file") MultipartFile file) {
         try {
             String studentId = authService.getAuthenticatedUserId();
+            Student student = studentService.getStudentById(studentId);
+
+            // Check if student has no supervisors
+            if ((student.getFacultySupervisorId().isEmpty() && student.getCompanySupervisorId().isEmpty())) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body("You don't have a supervisor yet. You cannot upload a report.");
+            }
+
+            // If supervisor exists, proceed
             reportService.uploadReport(studentId, file);
             return ResponseEntity.ok("Report uploaded successfully.");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().body("Failed to upload report: " + e.getMessage());
