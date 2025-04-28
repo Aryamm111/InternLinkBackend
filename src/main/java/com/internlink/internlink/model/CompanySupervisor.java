@@ -1,22 +1,23 @@
 package com.internlink.internlink.model;
 
-import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "CompanySupervisor")
+@Document(collection = "companySupervisors")
 public class CompanySupervisor extends User {
 
-    @Indexed(unique = true)
-    private String companySupervisorId;
-    public String companyName;
-    public String department;
+    private String hrManagerId;
+    private String companyName;
 
-    public String getCompanySupervisorId() {
-        return companySupervisorId;
+    public CompanySupervisor() {
+        super();
     }
 
-    public void setCompanySupervisorId(String companySupervisorId) {
-        this.companySupervisorId = companySupervisorId;
+    public String getHrManagerId() {
+        return hrManagerId;
+    }
+
+    public void setHrManagerId(String hrManagerId) {
+        this.hrManagerId = hrManagerId;
     }
 
     public String getCompanyName() {
@@ -26,13 +27,4 @@ public class CompanySupervisor extends User {
     public void setCompanyName(String companyName) {
         this.companyName = companyName;
     }
-
-    public String getDepartment() {
-        return department;
-    }
-
-    public void setDepartment(String department) {
-        this.department = department;
-    }
-
 }

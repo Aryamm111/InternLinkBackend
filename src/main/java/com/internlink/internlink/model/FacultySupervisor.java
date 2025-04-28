@@ -1,29 +1,51 @@
 package com.internlink.internlink.model;
 
-import org.springframework.data.mongodb.core.index.Indexed;
+import java.util.List;
+
 import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "FacultySupervisor")
+@Document(collection = "facultySupervisors") // Store FacultySupervisors in the 'facultysupervisors' collection
 public class FacultySupervisor extends User {
 
-    @Indexed(unique = true)
-    private String facultySupervisorId;
-    public String major;
+    private String supervisorId;
+    private List<String> studentIds; // List of student IDs supervised
+    private List<String> reportIds; // List of report IDs submitted by students
 
-    public String getfacultySupervisorId() {
-        return facultySupervisorId;
+    // Default constructor (required by Spring Boot)
+    public FacultySupervisor() {
+        super(); // Call the parent (User) constructor
     }
 
-    public void setFacultySupervisorId(String facultySupervisorId) {
-        this.facultySupervisorId = facultySupervisorId;
+    // Constructor to initialize with specific fields
+    public FacultySupervisor(String email, String password, String name, List<String> studentIds,
+            List<String> reportIds) {
+        super(email, password, name); // Pass to the User constructor
+        this.studentIds = studentIds;
+        this.reportIds = reportIds;
     }
 
-    public String getMajor() {
-        return major;
+    // Getters and Setters
+    public List<String> getStudentIds() {
+        return studentIds;
     }
 
-    public void setMajor(String major) {
-        this.major = major;
+    public void setStudentIds(List<String> studentIds) {
+        this.studentIds = studentIds;
     }
 
+    public List<String> getReportIds() {
+        return reportIds;
+    }
+
+    public void setReportIds(List<String> reportIds) {
+        this.reportIds = reportIds;
+    }
+
+    public String getSupervisorId() {
+        return supervisorId;
+    }
+
+    public void setSupervisorId(String supervisorId) {
+        this.supervisorId = supervisorId;
+    }
 }
