@@ -1,4 +1,5 @@
 package com.internlink.internlink.model;
+//April 24, at 6:52
 
 import java.util.Collection;
 import java.util.List;
@@ -8,6 +9,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 public class User implements UserDetails {
+
     private String id;
     private String username;
     private String password;
@@ -63,7 +65,7 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(() -> "ROLE_" + userRole); // Prefix with "ROLE_" for Spring Security
+        return List.of(() -> "ROLE_" + userRole);
     }
 
     @Override

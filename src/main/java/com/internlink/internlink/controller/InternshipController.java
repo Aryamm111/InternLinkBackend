@@ -1,190 +1,197 @@
-// package com.internlink.internlink.controller;
+package com.internlink.internlink.controller;
 
-// import java.text.SimpleDateFormat;
-// import java.util.Date;
-// import java.util.HashMap;
-// import java.util.List;
-// import java.util.Map;
-// import org.springframework.beans.factory.annotation.Autowired;
-// import org.springframework.http.MediaType;
-// import org.springframework.http.ResponseEntity;
-// import org.springframework.security.access.prepost.PreAuthorize;
-// import org.springframework.web.bind.annotation.GetMapping;
-// import org.springframework.web.bind.annotation.PathVariable;
-// import org.springframework.web.bind.annotation.PostMapping;
-// import org.springframework.web.bind.annotation.RequestMapping;
-// import org.springframework.web.bind.annotation.RequestParam;
-// import org.springframework.web.bind.annotation.RequestPart;
-// import org.springframework.web.bind.annotation.RestController;
-// import org.springframework.web.multipart.MultipartFile;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-// import com.fasterxml.jackson.core.type.TypeReference;
-// import com.fasterxml.jackson.databind.ObjectMapper;
-// import com.internlink.internlink.model.Internship;
-// import com.internlink.internlink.service.ApplicationService;
-// import com.internlink.internlink.service.AuthService;
-// import com.internlink.internlink.service.EmbeddingService;
-// import com.internlink.internlink.service.InteractionService;
-// import com.internlink.internlink.service.InternshipService;
-// import com.internlink.internlink.service.StudentService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
-// @RestController
-// @RequestMapping("/api/internships")
-// public class InternshipController {
-// @Autowired
-// private AuthService authService;
-// @Autowired
-// private ApplicationService applicationService;
-// @Autowired
-// private InteractionService interactionService;
-// @Autowired
-// private StudentService studentService;
-// @Autowired
-// private InternshipService internshipService;
+import com.internlink.internlink.model.Internship;
+import com.internlink.internlink.service.AuthService;
+import com.internlink.internlink.service.InternshipService;
+import com.internlink.internlink.service.StudentService;
 
-// @Autowired
-// private EmbeddingService embeddingService;
+@RestController
+@RequestMapping("/api/internships")
+public class InternshipController {
+    @Autowired
+    private AuthService authService;
+    @Autowired
+    private StudentService studentService;
+    @Autowired
+    private InternshipService internshipService;
 
-// @PreAuthorize("hasRole('HR_MANAGER')")
-// @PostMapping(value = "/create", consumes =
-// MediaType.MULTIPART_FORM_DATA_VALUE)
-// public ResponseEntity<String> createInternship(
-// @RequestPart("title") String title,
-// @RequestPart("company") String company,
-// @RequestPart("location") String location,
-// @RequestPart("description") String description,
-// @RequestPart("startDate") String startDateStr,
-// @RequestPart("duration") String durationStr,
-// @RequestPart("majors") String majorsJson,
-// @RequestPart("requiredSkills") String skillsJson,
-// @RequestPart("maxStudents") String maxStudentsStr,
-// @RequestPart(value = "internshipPlanFile", required = false) MultipartFile
-// planFile,
-// @RequestPart(value = "internshipImage", required = false) MultipartFile
-// image) {
-// try {
-// List<String> majors = new ObjectMapper().readValue(majorsJson, new
-// TypeReference<>() {
-// });
-// List<String> requiredSkills = new ObjectMapper().readValue(skillsJson, new
-// TypeReference<>() {
-// });
-// SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX"); //
-// ✅ ISO 8601
-// Date startDate = sdf.parse(startDateStr);
+    @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    // @PreAuthorize("hasRole('HR_MANAGER')")
+    public ResponseEntity<String> createInternship(
+            @RequestPart("title") String title,
+            @RequestPart("company") String company,
+            @RequestPart("location") String location,
+            @RequestPart("description") String description,
+            @RequestPart("startDate") String startDateStr,
+            @RequestPart("duration") String durationStr,
+            @RequestPart("majors") String majorsJson,
+            @RequestPart("requiredSkills") String skillsJson,
+            @RequestPart("managerId") String managerId,
+            @RequestPart("maxStudents") String maxStudentsStr,
+            @RequestPart(value = "internshipPlanFile", required = false) MultipartFile planFile,
+            @RequestPart(value = "internshipImage", required = false) MultipartFile image) {
+        try {
+            // String managerId = authService.getAuthenticatedUserId();
+            Internship internship = internshipService.buildInternshipFromRequest(
+                    null, // No existing internship during creation
+                    managerId, title, company, location, description, startDateStr,
+                    durationStr, majorsJson, skillsJson, maxStudentsStr,
+                    planFile, image, true);
 
-// System.out.println("startDate class: " + startDate.getClass().getName());
+            internshipService.createInternship(internship);
+            return ResponseEntity.ok("Internship created successfully!");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Error creating internship: " + e.getMessage());
+        }
+    }
 
-// int duration = Integer.parseInt(durationStr);
-// int maxStudents = Integer.parseInt(maxStudentsStr);
-// String ManagerId = authService.getAuthenticatedUserId();
+    @GetMapping("/recommend")
+    public ResponseEntity<Map<String, Object>> recommendInternships(
+            @RequestParam String studentId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "5") int limit) {
+        try {
 
-// String text = description + " "
-// + String.join(" ", requiredSkills) + " "
-// + String.join(" ", majors);
-// List<Float> embedding = embeddingService.generateEmbedding(text);
+            List<Float> studentEmbedding = studentService.getStudentEmbedding(studentId);
+            System.out
+                    .println("Student embedding fetched: " + (studentEmbedding != null ? "Success" : "Null or empty"));
+            String studentMajor = studentService.getStudentMajor(studentId);
 
-// Internship internship = new Internship(
-// ManagerId,
-// title,
-// company,
-// location,
-// description,
-// startDate,
-// duration,
-// majors,
-// requiredSkills,
-// maxStudents,
-// planFile != null ? planFile.getBytes() : null,
-// image != null ? image.getBytes() : null,
-// embedding);
+            List<Internship> allInternships = internshipService.getRecommendedInternships(studentEmbedding,
+                    studentMajor);
 
-// internshipService.createInternship(internship);
-// System.out.println("Internship startDate: " +
-// internship.getStartDate().getClass().getName());
+            int startIndex = (page - 1) * limit;
+            int endIndex = Math.min(startIndex + limit, allInternships.size());
 
-// return ResponseEntity.ok("Internship created successfully!");
-// } catch (Exception e) {
-// e.printStackTrace();
-// return ResponseEntity.internalServerError().body("Error creating internship:
-// " + e.getMessage());
-// }
-// }
+            List<Internship> internshipsForPage = allInternships.subList(startIndex, endIndex);
 
-// @GetMapping("/recommend")
-// public ResponseEntity<Map<String, Object>> recommendInternships(
-// @RequestParam String studentId,
-// @RequestParam(defaultValue = "1") int page,
-// @RequestParam(defaultValue = "5") int limit) {
-// try {
+            Map<String, Object> response = new HashMap<>();
+            response.put("internships", internshipsForPage);
+            int totalPages = Math.max(1, (int) Math.ceil((double) allInternships.size() / limit));
+            response.put("totalPages", totalPages);
+            response.put("currentPage", page);
 
-// List<Float> studentEmbedding = studentService.getStudentEmbedding(studentId);
-// System.out
-// .println("Student embedding fetched: " + (studentEmbedding != null ?
-// "Success" : "Null or empty"));
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("Error in recommendInternships: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 
-// List<Internship> allInternships =
-// internshipService.getRecommendedInternships(studentEmbedding);
+    @PutMapping(value = "/update/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('HR_MANAGER')")
+    public ResponseEntity<String> updateInternship(
+            @PathVariable String id,
+            @RequestPart("title") String title,
+            @RequestPart("company") String company,
+            @RequestPart("location") String location,
+            @RequestPart("description") String description,
+            @RequestPart("startDate") String startDateStr,
+            @RequestPart("duration") String durationStr,
+            @RequestPart("majors") String majorsJson,
+            @RequestPart("requiredSkills") String skillsJson,
+            @RequestPart("maxStudents") String maxStudentsStr,
+            @RequestPart(value = "internshipPlanFile", required = false) MultipartFile planFile,
+            @RequestPart(value = "internshipImage", required = false) MultipartFile image) {
+        try {
+            Internship existing = internshipService.getInternshipById(id);
+            if (existing == null) {
+                return ResponseEntity.notFound().build();
+            }
 
-// int startIndex = (page - 1) * limit;
-// int endIndex = Math.min(startIndex + limit, allInternships.size());
+            Internship updated = internshipService.buildInternshipFromRequest(
+                    existing, // pass existing internship here
+                    existing.getUploadedBy(),
+                    title, company, location, description, startDateStr,
+                    durationStr, majorsJson, skillsJson, maxStudentsStr,
+                    planFile, image, false);
 
-// List<Internship> internshipsForPage = allInternships.subList(startIndex,
-// endIndex);
+            updated.setStatus("active");
+            updated.setId(id);
+            internshipService.updateInternship(id, updated);
+            return ResponseEntity.ok("Internship updated successfully!");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Error updating internship: " + e.getMessage());
+        }
+    }
 
-// Map<String, Object> response = new HashMap<>();
-// response.put("internships", internshipsForPage);
-// int totalPages = Math.max(1, (int) Math.ceil((double) allInternships.size() /
-// limit));
-// response.put("totalPages", totalPages);
-// response.put("currentPage", page);
+    @GetMapping("/search")
+    public List<Internship> searchInternships(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String studentId, // Only studentId is needed now
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        String studentId2 = authService.getAuthenticatedUserId();
 
-// return ResponseEntity.ok(response);
-// } catch (Exception e) {
-// System.err.println("Error in recommendInternships: " + e.getMessage());
-// e.printStackTrace();
-// return ResponseEntity.internalServerError().build();
-// }
-// }
+        if (studentId2 == null) {
+            // Handle unauthenticated case
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not authenticated");
+        }
 
-// @GetMapping("/search")
-// public List<Internship> searchInternships(
-// @RequestParam(required = false) String title,
-// @RequestParam(required = false) String major,
-// @RequestParam(defaultValue = "1") int page,
-// @RequestParam(defaultValue = "10") int size) {
-// return internshipService.searchInternships(title, major, page, size);
-// }
+        return internshipService.searchInternships(title, studentId2, page, size);
+    }
 
-// @PreAuthorize("hasRole('HR_MANAGER')")
-// @GetMapping("/uploaded")
-// public ResponseEntity<List<Internship>> getUploadedInternships(@RequestParam
-// String hrManagerId) {
-// try {
-// List<Internship> internships =
-// internshipService.getUploadedInternships(hrManagerId);
-// return ResponseEntity.ok(internships);
-// } catch (Exception e) {
-// e.printStackTrace();
-// return ResponseEntity.internalServerError().body(null);
-// }
-// }
+    @PreAuthorize("hasRole('HR_MANAGER')")
+    @GetMapping("/uploaded")
+    public ResponseEntity<List<Internship>> getUploadedInternships(@RequestParam String hrManagerId) {
+        try {
+            List<Internship> internships = internshipService.getUploadedInternships(hrManagerId);
+            return ResponseEntity.ok(internships);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body(null);
+        }
+    }
 
-// @GetMapping("/{id}")
-// public ResponseEntity<Internship> getInternshipById(@PathVariable String id)
-// {
-// try {
-// Internship internship = internshipService.getInternshipById(id);
-// if (internship != null) {
-// return ResponseEntity.ok(internship);
-// } else {
-// return ResponseEntity.notFound().build();
-// }
-// } catch (Exception e) {
-// System.err.println("Error fetching internship details: " + e.getMessage());
-// e.printStackTrace();
-// return ResponseEntity.internalServerError().build();
-// }
-// }
+    @GetMapping("/{id}")
+    public ResponseEntity<Internship> getInternshipById(@PathVariable String id) {
+        try {
+            Internship internship = internshipService.getInternshipById(id);
+            if (internship != null) {
+                return ResponseEntity.ok(internship);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            System.err.println("Error fetching internship details: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 
-// }
+    @DeleteMapping("/delete/{id}")
+    @PreAuthorize("hasRole('HR_MANAGER')")
+    public ResponseEntity<String> deleteInternship(@PathVariable String id) {
+        boolean deleted = internshipService.softDeleteInternship(id);
+        if (deleted) {
+            return ResponseEntity.ok("Internship deleted (soft delete) successfully.");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Internship not found.");
+        }
+    }
+
+}

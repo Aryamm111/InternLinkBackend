@@ -1,4 +1,3 @@
-
 package com.internlink.internlink.dto;
 
 import java.util.List;
@@ -13,5 +12,4 @@ public class AssignSupervisorRequest {
     public void setStudentIds(List<String> studentIds) {
         this.studentIds = studentIds;
     }
-
 }

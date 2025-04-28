@@ -11,38 +11,62 @@ import org.springframework.stereotype.Service;
 
 import com.internlink.internlink.model.Student;
 
+import ai.djl.translate.TranslateException;
+
 @Service
 public class StudentService {
 
     @Autowired
     private MongoTemplate mongoTemplate;
-
-    // public List<Student> getAllStudents() {
-    // return mongoTemplate.findAll(Student.class);
-    // }
+    @Autowired
+    private UserService userService;
+    @Autowired
+    private EmbeddingService embeddingService;
 
     public Student getStudentById(String studentId) {
-        Query query = new Query(Criteria.where("studentId").is(studentId));
-        return mongoTemplate.findOne(query, Student.class);
+        return mongoTemplate.findById(studentId, Student.class);
     }
 
-    public boolean existsById(String studentId) {
-        return mongoTemplate.exists(new Query(Criteria.where("_id").is(studentId)), Student.class);
+    public String getStudentMajor(String studentId) {
+        Query query = new Query(Criteria.where("_id").is(studentId));
+        Student student = mongoTemplate.findOne(query, Student.class);
+        if (student == null) {
+            throw new RuntimeException("Student not found!" + studentId);
+        }
+        return student.getMajor(); // assuming Student has getMajor()
     }
 
     public Student register(Student student) {
+        if (userService.userExistsByEmail(student.getEmail())) {
+            throw new IllegalArgumentException("Email already exists!");
+        }
         return mongoTemplate.save(student);
     }
 
-    public Student updateStudent(String studentId, Student updatedStudent) {
-        Student student = getStudentById(studentId);
-        if (student == null)
-            return null;
+    public void assignSupervisorToStudents(String supervisorId, List<String> studentIds) {
+        Query query = new Query(Criteria.where("_id").in(studentIds));
+        Update update = new Update().set("companySupervisorId", supervisorId);
+        mongoTemplate.updateMulti(query, update, Student.class);
+    }
 
-        student.setName(updatedStudent.getName());
-        student.setEmail(updatedStudent.getEmail());
-        student.setMajor(updatedStudent.getMajor());
-        student.setUniversity(updatedStudent.getUniversity());
+    public Student updateStudent(String studentId, Student updatedStudent) throws TranslateException {
+        Student student = getStudentById(studentId);
+        if (student == null) {
+            return null;
+        }
+
+        if (updatedStudent.getSkills() != null) {
+            student.setSkills(updatedStudent.getSkills());
+        }
+        if (updatedStudent.getLocation() != null) {
+            student.setLocation(updatedStudent.getLocation());
+        }
+
+        // Regenerate embeddings
+        String text = student.getMajor() + "   " + student.getLocation() + "  " + student.getSkills();
+        List<Float> embedding = embeddingService.generateEmbedding(text);
+        student.setEmbedding(embedding);
+
         return mongoTemplate.save(student);
     }
 
@@ -53,36 +77,28 @@ public class StudentService {
         }
     }
 
-    public String getStudentNameById(String studentId) {
-        Student student = getStudentById(studentId);
+    public boolean existsById(String studentId) {
+        return mongoTemplate.exists(new Query(Criteria.where("_id").is(studentId)), Student.class);
+    }
+
+    public List<Float> getStudentEmbedding(String studentId) {
+
+        Student student = mongoTemplate.findById(studentId, Student.class);
         if (student == null) {
-            throw new RuntimeException("Student not found with ID: " + studentId);
-        }
-        return student.getName();
-    }
 
-    public List<Student> getStudentsByFacultySupervisor(String facultySupervisorId) {
-        return mongoTemplate.find(new Query(Criteria.where("facultySupervisorId").is(facultySupervisorId)),
-                Student.class);
-    }
-
-    public List<Student> getStudentsByCompanySupervisor(String companySupervisorId) {
-        return mongoTemplate.find(new Query(Criteria.where("companySupervisorId").is(companySupervisorId)),
-                Student.class);
-    }
-
-    public Student assignFacultySupervisor(String studentId, String facultySupervisorId) {
-        Query query = new Query(Criteria.where("studentId").is(studentId));
-        Student student = mongoTemplate.findOne(query, Student.class);
-
-        if (student == null) {
-            return null;
+            System.err.println("Student not found with ID: " + studentId);
+            throw new IllegalStateException("Student embedding not found!");
         }
 
-        Update update = new Update().set("facultySupervisorId", facultySupervisorId);
-        mongoTemplate.updateFirst(query, update, Student.class);
+        List<Float> embedding = student.getEmbedding();
+        if (embedding == null || embedding.isEmpty()) {
 
-        return mongoTemplate.findOne(query, Student.class);
+            System.err.println("Embedding not found or empty for student ID: " + studentId);
+            throw new IllegalStateException("Student embedding not found!");
+        }
+
+        System.out.println("Embedding successfully fetched for student ID: " + studentId);
+        return embedding;
     }
 
     public boolean assignCompanySupervisorToStudents(String supervisorId, List<String> studentIds) {
@@ -90,22 +106,39 @@ public class StudentService {
             return false;
         }
 
-        Query query = new Query(Criteria.where("studentId").in(studentIds));
-        Update update = new Update().set("companySupervisorId", supervisorId);
+        Query query = new Query(Criteria.where("_id").in(studentIds)); // `_id` is now `studentId`
+        Update update = new Update().set("companySupervisorId", supervisorId); // Set company supervisor
 
-        var result = mongoTemplate.updateMulti(query, update, Student.class); // Apply update
+        // Update all matching students
+        var result = mongoTemplate.updateMulti(query, update, Student.class);
 
+        // Return true if any students were updated
         return result.getModifiedCount() > 0;
     }
 
-    public String getStudentIdByMongoId(String mongoId) {
-        Query query = new Query(Criteria.where("_id").is(mongoId));
+    public Student assignFacultySupervisor(String studentId, String facultySupervisorId) {
+        Query query = new Query(Criteria.where("_id").is(studentId));
+
         Student student = mongoTemplate.findOne(query, Student.class);
-
-        if (student != null) {
-            return student.getStudentId();
+        if (student == null) {
+            return null; // Student not found
         }
+        Update update = new Update().set("facultySupervisorId", facultySupervisorId);
+        mongoTemplate.updateFirst(query, update, Student.class);
 
-        return null;
+        return mongoTemplate.findOne(query, Student.class);
     }
+
+    public List<Student> getStudentsByFacultySupervisor(String facultySupervisorId) {
+        Query query = new Query(Criteria.where("facultySupervisorId").is(facultySupervisorId));
+        query.fields().exclude("embedding"); // Exclude the "embedding" field
+        return mongoTemplate.find(query, Student.class);
+    }
+
+    public List<Student> getStudentsByCompanySupervisor(String companySupervisorId) {
+        Query query = new Query(Criteria.where("companySupervisorId").is(companySupervisorId));
+        query.fields().exclude("embedding"); // Exclude the "embedding" field to minimize the response size
+        return mongoTemplate.find(query, Student.class);
+    }
+
 }

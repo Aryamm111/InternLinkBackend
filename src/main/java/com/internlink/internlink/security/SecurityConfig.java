@@ -32,11 +32,20 @@ public class SecurityConfig {
         http
                 .cors(withDefaults())
                 .csrf(csrf -> csrf.disable())
+
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/user/login").permitAll()
+                        .requestMatchers("/api/user/forgot-password").permitAll()
+                        .requestMatchers("/api/user/reset-password").permitAll()
                         .requestMatchers("/api/user/session").permitAll()
                         .requestMatchers("/api/students/register").permitAll()
+                        .requestMatchers("/api/facultySupervisors/register").permitAll()
+
+                        .requestMatchers("/api/hrmanagers/register").permitAll()
+                        .requestMatchers("/api/hrmanagers/email/{email}").permitAll()
+                        .requestMatchers("/api/companysupervisors/register").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/api/internships/create").permitAll()
                         .requestMatchers("/api/applications/{internshipId}/apply").permitAll()
                         .requestMatchers("/api/internships/{internshipId}/view").permitAll()

@@ -39,37 +39,30 @@ public class TaskController {
         String authenticatedUserId = authService.getAuthenticatedUserId();
         String authenticatedUserRole = authService.getAuthenticatedUserRole();
 
-        System.out.println("authenticatedUserId: " + authenticatedUserId);
-        System.out.println("studentId before: " + studentId);
-
         if (authenticatedUserRole.equals("COMPANY_SUPERVISOR")) {
             if (studentId == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Student ID is required for supervisors");
             }
 
-            // Fetch tasks for the student and filter by supervisorId
             List<Task> tasks = taskService.getTasksForStudent(studentId);
             tasks = tasks.stream()
-                    .filter(task -> authenticatedUserId.equals(task.getSupervisorId())) // Validate supervisorId
+                    .filter(task -> authenticatedUserId.equals(task.getSupervisorId()))
                     .collect(Collectors.toList());
 
-            // If no tasks are found or they don't belong to the supervisor, forbid access
             if (tasks.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Student is not under this supervisor");
 
             }
             return ResponseEntity.ok(tasks);
         } else if (studentId == null) {
-            studentId = authenticatedUserId; // Default to authenticated student ID
+            studentId = authenticatedUserId;
         }
-
-        System.out.println("studentId after: " + studentId);
 
         // Fetch tasks for the student
         List<Task> tasks = taskService.getTasksForStudent(studentId);
 
         if (tasks.isEmpty()) {
-            return ResponseEntity.ok(Collections.emptyList()); // Return an empty list if no tasks are found
+            return ResponseEntity.ok(Collections.emptyList());
         }
         return ResponseEntity.ok(tasks);
     }
@@ -84,7 +77,6 @@ public class TaskController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized: User not found");
         }
 
-        // Validate the assigned student's ID
         if (task.getAssignedStudentId() == null || task.getAssignedStudentId().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Student ID is required");
         }
@@ -93,7 +85,6 @@ public class TaskController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student not found");
         }
 
-        // Set the supervisor's ID and create the task
         task.setSupervisorId(supervisorId);
         Task createdTask = taskService.createTask(task);
 
@@ -103,7 +94,7 @@ public class TaskController {
     @PutMapping("/{taskId}/complete")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<?> toggleTaskCompletion(@PathVariable("taskId") String taskId) {
-        // Get authenticated student's ID directly
+
         String studentId = authService.getAuthenticatedUserId();
 
         if (studentId == null) {

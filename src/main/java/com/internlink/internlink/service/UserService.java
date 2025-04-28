@@ -1,6 +1,8 @@
 package com.internlink.internlink.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -25,45 +27,53 @@ public class UserService implements UserDetailsService {
     }
 
     @Override
+    @Cacheable(value = "userDetails", key = "#email")
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         System.out.println("loadUserByEmail called with email: " + email);
 
-        User user = findByEmail(email); // to use email instead of username
+        User user = findByEmail(email);
         if (user == null) {
             throw new UsernameNotFoundException("User not found with email: " + email);
         }
-
         return user;
     }
 
+    @Cacheable(value = "usersByEmail", key = "#email")
     public User findByEmail(String email) {
-        String[] collections = { "students", "facultySupervisors", "companySupervisors", "hrManagers" };
+        long startTime = System.nanoTime();
+
+        String[] collections = { "students", "facultySupervisors", "companySupervisors", "hrmanagers" };
 
         for (String collection : collections) {
             Query query = new Query();
             query.addCriteria(Criteria.where("email").is(email));
-
             User foundUser = mongoTemplate.findOne(query, User.class, collection);
             if (foundUser != null) {
+                long endTime = System.nanoTime();
+                System.out.println("Sequential Execution Time: " + (endTime - startTime) + " ns");
                 return foundUser;
             }
         }
+
+        long endTime = System.nanoTime();
+        System.out.println("Sequential Execution Time: " + (endTime - startTime) + " ns");
         return null;
     }
 
-    public User createUser(String username, String password, String role) {
-        String encodedPassword = passwordEncoder.encode(password);
+    public boolean userExistsByEmail(String email) {
+        String[] collections = { "students", "facultySupervisors", "companySupervisors", "hrmanagers" };
 
-        User user = new User();
-        user.setUsername(username);
-        user.setPassword(encodedPassword);
-        user.setUserRole(role);
-
-        mongoTemplate.save(user);
-        return user;
+        for (String collection : collections) {
+            Query query = new Query(Criteria.where("email").is(email));
+            if (mongoTemplate.exists(query, User.class, collection)) {
+                return true;
+            }
+        }
+        return false;
     }
 
-    public boolean userExistsByEmail(String email) {
-        return mongoTemplate.exists(new Query(Criteria.where("email").is(email)), User.class);
+    @CacheEvict(value = "userDetails", key = "#email")
+    public void evictUserFromCache(String email) {
+        System.out.println("Evicting cache for user: " + email);
     }
 }
