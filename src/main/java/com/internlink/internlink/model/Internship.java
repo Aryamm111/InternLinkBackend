@@ -1,6 +1,6 @@
 package com.internlink.internlink.model;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.data.annotation.Id;
@@ -16,23 +16,24 @@ public class Internship {
     private String description;
     private String location;
     private int duration;
-    private Date startDate;
+    private LocalDate startDate;
     private List<String> majors;
     private List<String> requiredSkills;
     private List<Float> embedding;
     private List<String> students;
     private int maxStudents;
     private String uploadedBy;
-    private byte[] internshipPlanFile;
-    private byte[] internshipImage;
+    private String internshipPlanUrl;
+    private String imageUrl;
+    private String status = "active";
 
     public Internship() {
     }
 
     public Internship(String uploadedBy, String title, String company, String location,
-            String description, Date startDate, int duration,
+            String description, LocalDate startDate, int duration,
             List<String> majors, List<String> requiredSkills, int maxStudents,
-            byte[] internshipPlanFile, byte[] internshipImage, List<Float> embedding) {
+            String internshipPlanUrl, String ImageUrl, List<Float> embedding) {
         this.uploadedBy = uploadedBy;
         this.title = title;
         this.company = company;
@@ -43,8 +44,8 @@ public class Internship {
         this.majors = majors;
         this.requiredSkills = requiredSkills;
         this.maxStudents = maxStudents;
-        this.internshipPlanFile = internshipPlanFile;
-        this.internshipImage = internshipImage;
+        this.internshipPlanUrl = internshipPlanUrl;
+        this.imageUrl = ImageUrl;
         this.embedding = embedding;
     }
 
@@ -105,7 +106,7 @@ public class Internship {
         this.location = location;
     }
 
-    public Date getStartDate() {
+    public LocalDate getStartDate() {
         return startDate;
     }
 
@@ -125,20 +126,20 @@ public class Internship {
         this.students = students;
     }
 
-    public byte[] getInternshipPlanFile() {
-        return internshipPlanFile;
+    public String getinternshipPlanUrl() {
+        return internshipPlanUrl;
     }
 
-    public void setInternshipPlanFile(byte[] internshipPlanFile) {
-        this.internshipPlanFile = internshipPlanFile;
+    public void setInternshipPlanUrl(String internshipPlanUrl) {
+        this.internshipPlanUrl = internshipPlanUrl;
     }
 
-    public byte[] getInternshipImage() {
-        return internshipImage;
+    public String getImageUrl() {
+        return imageUrl;
     }
 
-    public void setInternshipImage(byte[] internshipImage) {
-        this.internshipImage = internshipImage;
+    public void setImageUrl(String ImageUrl) {
+        this.imageUrl = ImageUrl;
     }
 
     public int getDuration() {
@@ -157,7 +158,7 @@ public class Internship {
         this.maxStudents = maxStudents;
     }
 
-    public void setStartDate(Date startDate) {
+    public void setStartDate(LocalDate startDate) {
         this.startDate = startDate;
     }
 
@@ -167,5 +168,13 @@ public class Internship {
 
     public void setUploadedBy(String uploadedBy) {
         this.uploadedBy = uploadedBy;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }
