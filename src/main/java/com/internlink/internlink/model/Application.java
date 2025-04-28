@@ -1,49 +1,103 @@
 package com.internlink.internlink.model;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.LocalDateTime;
-@Document(collection = "Application")
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+@Document(collection = "applications")
 public class Application {
 
-    @Indexed(unique = true)
-    private String applicationId;
+    @Id
+    private String id;
     private String studentId;
-    private String opportunityId; //  إضافة معرف الوظيفة
-    private String opportunityName;
-    private ApplicationStatus status; //  تحسين حالة الطلب
-    private LocalDateTime statusTimestamp; // تحسين الطابع الزمني
+    private String internshipId;
+    private String internshipTitle;
+    private String status;
+    private LocalDateTime appliedOn;
+    private String letter;
+    private String academicRecord;
+    private String cv;
+    private String skills;
 
-    public enum ApplicationStatus {
-        PENDING, ACCEPTED, REJECTED;
+    public String getStatus() {
+        return status;
     }
 
-    public Application() {}
-
-    public Application(String applicationId, String studentId, String opportunityId, String opportunityName, ApplicationStatus status, LocalDateTime statusTimestamp) {
-        this.applicationId = applicationId;
-        this.studentId = studentId;
-        this.opportunityId = opportunityId;
-        this.opportunityName = opportunityName;
+    public void setStatus(String status) {
         this.status = status;
-        this.statusTimestamp = statusTimestamp;
     }
 
-    //  Getters and Setters
-    public String getApplicationId() { return applicationId; }
-    public void setApplicationId(String applicationId) { this.applicationId = applicationId; }
+    public String getInternshipId() {
+        return internshipId;
+    }
 
-    public String getStudentId() { return studentId; }
-    public void setStudentId(String studentId) { this.studentId = studentId; }
+    public void setInternshipId(String internshipId) {
+        this.internshipId = internshipId;
+    }
 
-    public String getOpportunityId() { return opportunityId; }
-    public void setOpportunityId(String opportunityId) { this.opportunityId = opportunityId; }
+    public String getStudentId() {
+        return studentId;
+    }
 
-    public String getOpportunityName() { return opportunityName; }
-    public void setOpportunityName(String opportunityName) { this.opportunityName = opportunityName; }
+    public void setStudentId(String studentId) {
+        this.studentId = studentId;
+    }
 
-    public ApplicationStatus getStatus() { return status; }
-    public void setStatus(ApplicationStatus status) { this.status = status; }
+    public LocalDateTime getAppliedOn() {
+        return appliedOn;
+    }
 
-    public LocalDateTime getStatusTimestamp() { return statusTimestamp; }
-    public void setStatusTimestamp(LocalDateTime statusTimestamp) { this.statusTimestamp = statusTimestamp; }
+    public void setAppliedOn(LocalDateTime appliedOn) {
+        this.appliedOn = appliedOn;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getLetter() {
+        return letter;
+    }
+
+    public void setLetter(String letter) {
+        this.letter = letter;
+    }
+
+    public String getInternshipTitle() {
+        return internshipTitle;
+    }
+
+    public void setInternshipTitle(String internshipTitle) {
+        this.internshipTitle = internshipTitle;
+    }
+
+    public String getSkills() {
+        return skills;
+    }
+
+    public void setSkills(String skills) {
+        this.skills = skills;
+    }
+
+    public String getAcademicRecord() {
+        return academicRecord;
+    }
+
+    public void setAcademicRecord(String academicRecord) {
+        this.academicRecord = academicRecord;
+    }
+
+    public String getCv() {
+        return cv;
+    }
+
+    public void setCv(String cv) {
+        this.cv = cv;
+    }
+
 }
