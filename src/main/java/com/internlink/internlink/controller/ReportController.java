@@ -37,6 +37,8 @@ public class ReportController {
             String studentId = authService.getAuthenticatedUserId();
             reportService.uploadReport(studentId, file);
             return ResponseEntity.ok("Report uploaded successfully.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().body("Failed to upload report: " + e.getMessage());
