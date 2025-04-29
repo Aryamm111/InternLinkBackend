@@ -1,6 +1,7 @@
 package com.internlink.internlink.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -8,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,7 +22,6 @@ import com.internlink.internlink.model.Student;
 import com.internlink.internlink.service.AuthService;
 import com.internlink.internlink.service.EmbeddingService;
 import com.internlink.internlink.service.StudentService;
-import com.internlink.internlink.service.UserService;
 
 import ai.djl.translate.TranslateException;
 
@@ -41,9 +40,6 @@ public class StudentController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private UserService userService;
 
     @GetMapping
     @PreAuthorize("hasRole('FACULTY_SUPERVISOR') or hasRole('COMPANY_SUPERVISOR')")
@@ -94,30 +90,12 @@ public class StudentController {
         return ResponseEntity.ok(updated);
     }
 
-    @DeleteMapping("/{studentId}")
-    @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<String> deleteStudent(@PathVariable String studentId) {
-        String authenticatedStudentId = authService.getAuthenticatedUserId();
-
-        if (authenticatedStudentId == null || !authenticatedStudentId.equals(studentId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("You are not authorized to delete this profile");
-        }
-
-        Student student = studentService.getStudentById(studentId);
-        if (student == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student not found");
-        }
-
-        studentService.deleteStudent(studentId);
-        return ResponseEntity.ok("Student deleted successfully");
-    }
-
-    @GetMapping("/{studentId}/name")
-    public ResponseEntity<?> getStudentName(@PathVariable String studentId) {
-        Student student = studentService.getStudentById(studentId);
-        return (student != null) ? ResponseEntity.ok(student.getName())
-                : ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student not found");
+    @GetMapping("/{studentId}/supervisor-ids")
+    public ResponseEntity<Map<String, String>> getSupervisorIds(@PathVariable String studentId) {
+        Map<String, String> ids = studentService.getSupervisorIds(studentId);
+        return (ids != null)
+                ? ResponseEntity.ok(ids)
+                : ResponseEntity.notFound().build();
     }
 
     @PostMapping("/{studentId}/add")

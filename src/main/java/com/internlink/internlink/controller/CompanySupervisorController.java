@@ -29,7 +29,6 @@ public class CompanySupervisorController {
 
     @PostMapping("/register")
     public ResponseEntity<?> registerCompanySupervisor(@RequestBody CompanySupervisor companySupervisor) {
-
         return companySupervisorService.registerCompanySupervisor(companySupervisor);
     }
 

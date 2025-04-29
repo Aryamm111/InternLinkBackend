@@ -108,7 +108,7 @@ public class InternshipService {
                         .append("limit", 12));
 
         Document matchStage = new Document("$match", new Document("status", "active")
-                .append("majors", studentMajor)); // <<< here we filter by major
+                .append("majors", studentMajor));
 
         Document projectStage = new Document("$project",
                 new Document("embedding", 0));
@@ -134,7 +134,7 @@ public class InternshipService {
     }
 
     public Internship buildInternshipFromRequest(
-            Internship existingInternship, // <- pass existing object
+            Internship existingInternship,
             String managerId,
             String title,
             String company,
@@ -181,7 +181,7 @@ public class InternshipService {
             Files.write(filePath, planFile.getBytes());
             internship.setInternshipPlanUrl("http://localhost:8081/uploads/plans/" + fileName);
         } else if (existingInternship != null) {
-            internship.setInternshipPlanUrl(existingInternship.getinternshipPlanUrl()); // <-- keep old URL
+            internship.setInternshipPlanUrl(existingInternship.getinternshipPlanUrl());
         }
 
         // Save image file if new file is uploaded
@@ -192,23 +192,19 @@ public class InternshipService {
             Files.write(imagePath, imageFile.getBytes());
             internship.setImageUrl("http://localhost:8081/uploads/images/" + imageName);
         } else if (existingInternship != null) {
-            internship.setImageUrl(existingInternship.getImageUrl()); // <-- keep old URL
+            internship.setImageUrl(existingInternship.getImageUrl());
         }
 
         return internship;
     }
 
     public boolean softDeleteInternship(String id) {
-        // Define the query to find the document by its ID
         Query query = new Query(where("_id").is(id));
 
-        // Define the update operation to set the status field to "deleted"
         Update update = new Update().set("status", "deleted");
 
-        // Execute the update
         UpdateResult result = mongoTemplate.updateFirst(query, update, Internship.class);
 
-        // Return true if a document was updated, false otherwise
         return result.getModifiedCount() > 0;
     }
 

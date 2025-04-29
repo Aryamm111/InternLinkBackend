@@ -34,19 +34,16 @@ public class CompanySupervisorService {
         query.addCriteria(Criteria.where("_id").is(hrManagerId));
         HRManager hrManager = mongoTemplate.findOne(query, HRManager.class, "hrmanagers");
 
-        // Step 2: Validate HR Manager and company name
         if (hrManager == null || !hrManager.getCompanyName().equalsIgnoreCase(companySupervisor.getCompanyName())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Invalid HR Manager ID or company name does not match.");
         }
 
-        // Step 3: Register Company Supervisor
         companySupervisor.setPassword(passwordEncoder.encode(companySupervisor.getPassword()));
         companySupervisor.setUserRole("COMPANY_SUPERVISOR");
         companySupervisor.setHrManagerId(hrManagerId);
         mongoTemplate.save(companySupervisor, "companySupervisors");
 
-        // Step 4: Add supervisor ID to HR Manager
         if (hrManager.getSupervisorIds() == null) {
             hrManager.setSupervisorIds(new ArrayList<>());
         }

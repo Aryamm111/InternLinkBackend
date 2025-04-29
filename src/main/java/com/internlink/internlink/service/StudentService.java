@@ -1,7 +1,9 @@
 package com.internlink.internlink.service;
 
 import java.util.List;
+import java.util.Map;
 
+import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -25,6 +27,21 @@ public class StudentService {
 
     public Student getStudentById(String studentId) {
         return mongoTemplate.findById(studentId, Student.class);
+    }
+
+    public Map<String, String> getSupervisorIds(String studentId) {
+        Query query = new Query(Criteria.where("_id").is(studentId));
+        query.fields()
+                .include("facultySupervisorId")
+                .include("companySupervisorId");
+
+        Document student = mongoTemplate.findOne(query, Document.class, "students");
+        if (student == null)
+            return null;
+
+        return Map.of(
+                "facultySupervisorId", student.getString("facultySupervisorId"),
+                "companySupervisorId", student.getString("companySupervisorId"));
     }
 
     public String getStudentMajor(String studentId) {

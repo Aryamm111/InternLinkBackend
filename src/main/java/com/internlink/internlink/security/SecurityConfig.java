@@ -43,13 +43,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/facultySupervisors/register").permitAll()
 
                         .requestMatchers("/api/hrmanagers/register").permitAll()
-                        .requestMatchers("/api/hrmanagers/email/{email}").permitAll()
                         .requestMatchers("/api/companysupervisors/register").permitAll()
                         .requestMatchers("/ws/**").permitAll()
-                        .requestMatchers("/api/internships/create").permitAll()
-                        .requestMatchers("/api/applications/{internshipId}/apply").permitAll()
-                        .requestMatchers("/api/internships/{internshipId}/view").permitAll()
-                        .requestMatchers("/api/applications/{applicationId}/update-status").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS));
 
@@ -66,10 +61,6 @@ public class SecurityConfig {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
-        // System.out.println("AuthenticationManager configured with UserDetailsService:
-        // " + userDetailsService);
-        // System.out.println("AuthenticationManager configured with PasswordEncoder: "
-        // + passwordEncoder());
 
         return new ProviderManager(List.of(provider));
     }

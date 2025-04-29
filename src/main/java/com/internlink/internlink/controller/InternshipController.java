@@ -37,7 +37,7 @@ public class InternshipController {
     private InternshipService internshipService;
 
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    // @PreAuthorize("hasRole('HR_MANAGER')")
+    @PreAuthorize("hasRole('HR_MANAGER')")
     public ResponseEntity<String> createInternship(
             @RequestPart("title") String title,
             @RequestPart("company") String company,
@@ -47,14 +47,13 @@ public class InternshipController {
             @RequestPart("duration") String durationStr,
             @RequestPart("majors") String majorsJson,
             @RequestPart("requiredSkills") String skillsJson,
-            @RequestPart("managerId") String managerId,
             @RequestPart("maxStudents") String maxStudentsStr,
             @RequestPart(value = "internshipPlanFile", required = false) MultipartFile planFile,
             @RequestPart(value = "internshipImage", required = false) MultipartFile image) {
         try {
-            // String managerId = authService.getAuthenticatedUserId();
+            String managerId = authService.getAuthenticatedUserId();
             Internship internship = internshipService.buildInternshipFromRequest(
-                    null, // No existing internship during creation
+                    null,
                     managerId, title, company, location, description, startDateStr,
                     durationStr, majorsJson, skillsJson, maxStudentsStr,
                     planFile, image, true);
@@ -68,6 +67,7 @@ public class InternshipController {
     }
 
     @GetMapping("/recommend")
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<Map<String, Object>> recommendInternships(
             @RequestParam String studentId,
             @RequestParam(defaultValue = "1") int page,
@@ -140,15 +140,15 @@ public class InternshipController {
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('STUDENT')")
     public List<Internship> searchInternships(
             @RequestParam(required = false) String title,
-            @RequestParam(required = false) String studentId, // Only studentId is needed now
+            @RequestParam(required = false) String studentId, //
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
         String studentId2 = authService.getAuthenticatedUserId();
 
         if (studentId2 == null) {
-            // Handle unauthenticated case
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not authenticated");
         }
 

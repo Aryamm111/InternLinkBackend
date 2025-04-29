@@ -77,7 +77,6 @@ public class ApplicationService {
         application.setAppliedOn(LocalDateTime.now());
         application.setStatus("pending");
 
-        // Save the application to the database
         mongoTemplate.save(application, "applications");
     }
 
@@ -99,17 +98,14 @@ public class ApplicationService {
     }
 
     public void updateStatus(String applicationId, String status) {
-        // Validate that the status is one of the allowed values
         if (!status.equals("Accepted") && !status.equals("Rejected") && !status.equals("Pending")) {
             throw new IllegalArgumentException("Invalid status value: " + status);
         }
 
-        // Update application status
         Query appQuery = new Query(Criteria.where("_id").is(applicationId));
         Update update = new Update().set("status", status);
         mongoTemplate.updateFirst(appQuery, update, Application.class);
 
-        // If accepted, also add the student to the internship's list of students
         if ("Accepted".equalsIgnoreCase(status)) {
             Application application = getApplicationById(applicationId);
             if (application != null) {
@@ -125,8 +121,7 @@ public class ApplicationService {
     }
 
     public List<Student> getAcceptedStudentsForHr(String hrManagerId) {
-        // First, get the list of accepted applications for internships uploaded by this
-        // HR
+
         Aggregation aggregation = Aggregation.newAggregation(
                 Aggregation.addFields()
                         .addFieldWithValue("internshipIdObj",
@@ -138,8 +133,7 @@ public class ApplicationService {
                 Aggregation.match(
                         Criteria.where("internshipData.uploadedBy").is(hrManagerId)
                                 .and("status").is("Accepted")),
-                Aggregation.project("studentId") // if you want only studentId
-        );
+                Aggregation.project("studentId"));
 
         AggregationResults<Document> results = mongoTemplate.aggregate(aggregation, "applications", Document.class);
         List<String> studentIds = results.getMappedResults().stream()
@@ -150,14 +144,13 @@ public class ApplicationService {
             return new ArrayList<>();
         }
 
-        // Now, fetch students based on those IDs
         Query query = new Query(Criteria.where("_id").in(studentIds));
         return mongoTemplate.find(query, Student.class);
     }
 
     public Application getApplicationById(String applicationId) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(applicationId)); // Corrected to `_id`
+        query.addCriteria(Criteria.where("_id").is(applicationId));
         return mongoTemplate.findOne(query, Application.class, "applications");
     }
 

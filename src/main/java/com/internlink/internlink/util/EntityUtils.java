@@ -19,7 +19,7 @@ public final class EntityUtils {
                                 field.setAccessible(true);
                                 return field.get(source) == null;
                             } catch (IllegalAccessException e) {
-                                return true; // Default to exclude if an error occurs
+                                return true;
                             }
                         })
                         .map(Field::getName)
