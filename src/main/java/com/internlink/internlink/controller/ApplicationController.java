@@ -35,7 +35,7 @@ public class ApplicationController {
     @Autowired
     private InternshipService internshipService;
 
-    // Allows a student to apply to a specific internship (for student)
+    // Allows a student to apply to a specific internship
     @PostMapping("/{internshipId}/apply")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<String> apply(
@@ -57,7 +57,7 @@ public class ApplicationController {
         }
     }
 
-    // Retrieves all applications submitted by a specific student (for student)
+    // Retrieves all applications submitted by a specific student
     @GetMapping("/student")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<List<Application>> getStudentApplications(Authentication authentication) {
@@ -77,6 +77,7 @@ public class ApplicationController {
         return ResponseEntity.ok(applications);
     }
 
+    // Retrieves all accepted students for hr
     @GetMapping("/accepted-students")
     @PreAuthorize("hasRole('HR_MANAGER')")
     public ResponseEntity<List<Student>> getAcceptedStudents() {
