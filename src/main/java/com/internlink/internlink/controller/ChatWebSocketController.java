@@ -14,8 +14,8 @@ public class ChatWebSocketController {
     @Autowired
     private MessageService messageService;
 
-    @MessageMapping("/chat.send") // Matches "/app/chat.send"
-    @SendTo("/topic/messages") // Clients should subscribe to this
+    @MessageMapping("/chat.send")
+    @SendTo("/topic/messages")
     public Message send(Message message) {
         return messageService.sendMessage(
                 message.getConversationId(),
