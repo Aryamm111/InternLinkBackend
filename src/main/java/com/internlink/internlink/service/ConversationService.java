@@ -23,14 +23,17 @@ public class ConversationService {
     }
 
     public Conversation getOrCreateConversation(String user1Id, String user2Id) {
+        // Prevent users from starting a conversation with themselves
         if (user1Id.equals(user2Id)) {
             throw new IllegalArgumentException("Cannot start a conversation with yourself.");
         }
 
+        // Ensure both users exist in the system
         if (!userService.userExistsByEmail(user1Id) || !userService.userExistsByEmail(user2Id)) {
             throw new RuntimeException("One or both users do not exist.");
         }
 
+        // Query to check if a conversation between these users already exists
         Query query = new Query();
         query.addCriteria(new Criteria().andOperator(
                 Criteria.where("participantIds").all(user1Id, user2Id),
@@ -38,6 +41,7 @@ public class ConversationService {
 
         Conversation existing = mongoTemplate.findOne(query, Conversation.class, "conversations");
 
+        // Return existing conversation if found, otherwise create a new one
         if (existing != null) {
             return existing;
         }
@@ -48,9 +52,9 @@ public class ConversationService {
     }
 
     public List<Conversation> getUserConversations(String userId) {
+        // Retrieve all conversations where the user is a participant
         Query query = new Query();
         query.addCriteria(Criteria.where("participantIds").in(userId));
         return mongoTemplate.find(query, Conversation.class, "conversations");
     }
-
 }

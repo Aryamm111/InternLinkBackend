@@ -62,7 +62,8 @@ public class StudentController {
 
             String text = student.getMajor() + " ".repeat(3) + student.getLocation() + " ".repeat(2)
                     + student.getSkills();
-            List<Float> embedding = embeddingService.generateEmbedding(text);
+            String normalizedText = text.trim().toLowerCase().replaceAll("\\s+", " ");
+            List<Float> embedding = embeddingService.generateEmbedding(normalizedText);
             student.setEmbedding(embedding);
 
             // Save the student object to the database

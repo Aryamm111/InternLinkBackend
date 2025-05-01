@@ -74,33 +74,35 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest, HttpServletRequest request) {
-        System.out.println("Login endpoint reached!");
         try {
+            // Authenticate user using email and password
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
 
+            // Store the authentication in the security context and session
             SecurityContextHolder.getContext().setAuthentication(authentication);
             request.getSession().setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
 
             User user = (User) authentication.getPrincipal();
 
+            // If the logged-in user is a student, check if their embedding exists
             if ("STUDENT".equalsIgnoreCase(user.getUserRole())) {
                 Query studentQuery = new Query(Criteria.where("email").is(loginRequest.getEmail()));
                 Student student = mongoTemplate.findOne(studentQuery, Student.class, "students");
 
+                // Generate and save embedding in the first login of students
                 if (student != null && (student.getEmbedding() == null || student.getEmbedding().isEmpty())) {
                     try {
                         String text = student.getMajor() + "   " + student.getLocation() + "  " + student.getSkills();
-                        List<Float> embedding = embeddingService.generateEmbedding(text);
+                        String normalizedText = text.trim().toLowerCase().replaceAll("\\s+", " ");
+                        List<Float> embedding = embeddingService.generateEmbedding(normalizedText);
                         student.setEmbedding(embedding);
                         mongoTemplate.save(student, "students");
-                        System.out.println("Embedding generated for student: " + student.getEmail());
                     } catch (TranslateException e) {
                         System.out.println("Embedding generation failed: " + e.getMessage());
                     }
                 }
             }
-
             return ResponseEntity.ok().build();
 
         } catch (BadCredentialsException ex) {
@@ -153,12 +155,12 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
         }
 
-        String token = UUID.randomUUID().toString().substring(0, 6); // 6-digit code
+        String token = UUID.randomUUID().toString().substring(0, 6);
 
         ResetToken resetToken = new ResetToken(email, token, Instant.now().plus(Duration.ofMinutes(30)));
         mongoTemplate.save(resetToken, "resetTokens");
 
-        mailService.sendResetLink(email, token); // ✅ send only code
+        mailService.sendResetLink(email, token);
 
         return ResponseEntity.ok("Reset code sent to your email.");
     }

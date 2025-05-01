@@ -22,6 +22,8 @@ import com.internlink.internlink.model.Student;
 import com.internlink.internlink.service.ApplicationService;
 import com.internlink.internlink.service.AuthService;
 import com.internlink.internlink.service.InternshipService;
+import com.internlink.internlink.service.MailService;
+import com.internlink.internlink.service.StudentService;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
@@ -31,7 +33,10 @@ public class ApplicationController {
     private AuthService authService;
     @Autowired
     private ApplicationService applicationService;
-
+    @Autowired
+    private MailService mailService;
+    @Autowired
+    private StudentService studentService;
     @Autowired
     private InternshipService internshipService;
 
@@ -93,6 +98,7 @@ public class ApplicationController {
             @RequestParam String status) {
         try {
             Application application = applicationService.getApplicationById(applicationId);
+            Student student = studentService.getStudentById(application.getStudentId()); // You need this for email
 
             if ("Accepted".equalsIgnoreCase(status)) {
                 Internship internship = internshipService.getInternshipById(application.getInternshipId());
@@ -104,10 +110,17 @@ public class ApplicationController {
 
                 internship.getStudents().add(application.getStudentId());
                 internshipService.saveInternship(internship);
-
             }
 
             applicationService.updateStatus(applicationId, status);
+
+            // 📧 Send Email Notification
+            String subject = "Application Status Update";
+            String body = "Hello " + student.getName() + ",\n\n" +
+                    "Your application status has been updated to: " + status + ".\n\n" +
+                    "Thank you for using the Internship System.";
+
+            mailService.sendEmail(student.getEmail(), subject, body);
 
             return ResponseEntity.ok("Application status updated successfully!");
         } catch (Exception e) {

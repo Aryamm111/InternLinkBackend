@@ -8,7 +8,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.regex.Pattern;
 
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +43,10 @@ public class InternshipService {
         mongoTemplate.save(internship);
     }
 
+    public List<Internship> getAllInternships() {
+        return mongoTemplate.findAll(Internship.class);
+    }
+
     public void saveInternship(Internship internship) {
         mongoTemplate.save(internship);
     }
@@ -64,19 +67,16 @@ public class InternshipService {
 
     public List<Internship> searchInternships(String title, String studentId, int page, int size) {
         Query query = new Query();
-
-        // Always include only active internships
+        // Include only active internships
         query.addCriteria(Criteria.where("status").is("active"));
-
         // Fetch the student's major from the UserService
-        String studentMajor = studentService.getStudentMajor(studentId); // Assuming you have this method
+        String studentMajor = studentService.getStudentMajor(studentId);
 
         if (studentMajor == null || studentMajor.isEmpty()) {
             // If the student does not have a major or it could not be fetched, return an
             // empty list
             return new ArrayList<>();
         }
-
         // Filter internships by the student's major
         query.addCriteria(Criteria.where("majors").in(studentMajor));
 
@@ -84,7 +84,6 @@ public class InternshipService {
         if (title != null && !title.isEmpty()) {
             query.addCriteria(Criteria.where("$text").is(new BasicDBObject("$search", title)));
         }
-
         Pageable pageable = PageRequest.of(page - 1, size);
         query.with(pageable);
 
@@ -92,13 +91,13 @@ public class InternshipService {
     }
 
     public List<Internship> getRecommendedInternships(List<Float> studentEmbedding, String studentMajor) {
-        System.out.println(" student embedding: " + studentEmbedding);
-
+        // Validate that the embedding is not null or empty
         if (studentEmbedding == null || studentEmbedding.isEmpty()) {
             System.err.println("Invalid student embedding: " + studentEmbedding);
             throw new IllegalArgumentException("Invalid student embedding!");
         }
 
+        // Build the vector search query to find similar internships
         Document vectorSearchQuery = new Document("$vectorSearch",
                 new Document("index", "internship_index2")
                         .append("queryVector", studentEmbedding)
@@ -107,23 +106,22 @@ public class InternshipService {
                         .append("k", 15)
                         .append("limit", 12));
 
+        // Filter results to only include active internships matching the student's
+        // major
         Document matchStage = new Document("$match", new Document("status", "active")
                 .append("majors", studentMajor));
-
+        // Exclude the embedding field from the final result
         Document projectStage = new Document("$project",
                 new Document("embedding", 0));
 
-        System.out.println("Vector search query: " + vectorSearchQuery.toJson());
-
+        // Run the aggregation pipeline on the internships collection
         List<Document> results = mongoTemplate.getCollection("internships")
                 .aggregate(List.of(vectorSearchQuery, matchStage, projectStage))
                 .into(new ArrayList<>());
-
+        // Convert MongoDB documents into Internship objects
         List<Internship> internships = results.stream()
                 .map(doc -> mongoTemplate.getConverter().read(Internship.class, doc))
                 .toList();
-
-        System.out.println("Number of internships found: " + internships.size());
         return internships;
     }
 
@@ -167,10 +165,12 @@ public class InternshipService {
 
         internship.setStudents(new ArrayList<>());
 
+        // Generating embeddings for internship
         String combinedText = title + " " + description + " " +
                 String.join(" ", internship.getRequiredSkills()) + " " +
                 String.join(" ", internship.getMajors());
-        List<Float> embedding = embeddingService.generateEmbedding(combinedText);
+        String normalizedText = combinedText.trim().toLowerCase().replaceAll("\\s+", " ");
+        List<Float> embedding = embeddingService.generateEmbedding(normalizedText);
         internship.setEmbedding(embedding);
 
         // Save internship plan if new file is uploaded

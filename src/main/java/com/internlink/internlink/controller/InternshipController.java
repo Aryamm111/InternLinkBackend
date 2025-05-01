@@ -67,26 +67,27 @@ public class InternshipController {
     }
 
     @GetMapping("/recommend")
-    @PreAuthorize("hasRole('STUDENT')")
+    @PreAuthorize("hasRole('STUDENT')") // Ensures only students can access this endpoint
     public ResponseEntity<Map<String, Object>> recommendInternships(
             @RequestParam String studentId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "5") int limit) {
         try {
-
+            // Fetch student's embedding vector for recommendation calculations
             List<Float> studentEmbedding = studentService.getStudentEmbedding(studentId);
             System.out
                     .println("Student embedding fetched: " + (studentEmbedding != null ? "Success" : "Null or empty"));
+            // Retrieve student's major for relevance in recommendations
             String studentMajor = studentService.getStudentMajor(studentId);
-
+            // Get recommended internships based on student's embedding and major
             List<Internship> allInternships = internshipService.getRecommendedInternships(studentEmbedding,
                     studentMajor);
-
+            // Implement pagination logic
             int startIndex = (page - 1) * limit;
             int endIndex = Math.min(startIndex + limit, allInternships.size());
-
             List<Internship> internshipsForPage = allInternships.subList(startIndex, endIndex);
 
+            // Prepare response map with internship data and pagination details
             Map<String, Object> response = new HashMap<>();
             response.put("internships", internshipsForPage);
             int totalPages = Math.max(1, (int) Math.ceil((double) allInternships.size() / limit));
@@ -95,6 +96,7 @@ public class InternshipController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            // Handle unexpected errors gracefully
             System.err.println("Error in recommendInternships: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.internalServerError().build();
@@ -143,7 +145,6 @@ public class InternshipController {
     @PreAuthorize("hasRole('STUDENT')")
     public List<Internship> searchInternships(
             @RequestParam(required = false) String title,
-            @RequestParam(required = false) String studentId, //
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
         String studentId2 = authService.getAuthenticatedUserId();

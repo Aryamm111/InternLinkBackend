@@ -50,7 +50,7 @@ public class StudentService {
         if (student == null) {
             throw new RuntimeException("Student not found!" + studentId);
         }
-        return student.getMajor(); // assuming Student has getMajor()
+        return student.getMajor();
     }
 
     public Student register(Student student) {

@@ -2,6 +2,7 @@ package com.internlink.internlink.controller;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,8 +20,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.internlink.internlink.model.Task;
 import com.internlink.internlink.service.AuthService;
+import com.internlink.internlink.service.MailService;
 import com.internlink.internlink.service.StudentService;
 import com.internlink.internlink.service.TaskService;
+import com.internlink.internlink.service.UserService;
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -32,6 +35,10 @@ public class TaskController {
     private AuthService authService;
     @Autowired
     private StudentService studentService;
+    @Autowired
+    private UserService userService;
+    @Autowired
+    private MailService mailService;
 
     @GetMapping("/student")
     @PreAuthorize("hasRole('STUDENT') or hasRole('COMPANY_SUPERVISOR')")
@@ -70,7 +77,6 @@ public class TaskController {
     @PostMapping("/create")
     @PreAuthorize("hasRole('COMPANY_SUPERVISOR')")
     public ResponseEntity<?> createTask(@RequestBody Task task) {
-
         String supervisorId = authService.getAuthenticatedUserId();
 
         if (supervisorId == null) {
@@ -85,8 +91,22 @@ public class TaskController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student not found");
         }
 
+        Map<String, String> supervisorIds = studentService.getSupervisorIds(task.getAssignedStudentId());
+        if (supervisorIds == null || !supervisorId.equals(supervisorIds.get("companySupervisorId"))) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("You are not authorized to assign tasks to this student");
+        }
+
         task.setSupervisorId(supervisorId);
         Task createdTask = taskService.createTask(task);
+
+        String studentEmail = userService.findEmailById(task.getAssignedStudentId());
+        if (studentEmail != null) {
+            String body = "You have been assigned a new task: " + task.getTitle() +
+                    "\nDescription: " + task.getDescription() +
+                    "\nDue Date: " + task.getDueDate();
+            mailService.sendNotification(studentEmail, body);
+        }
 
         return ResponseEntity.status(HttpStatus.CREATED).body(createdTask);
     }

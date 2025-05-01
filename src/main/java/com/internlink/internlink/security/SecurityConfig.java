@@ -41,7 +41,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/user/session").permitAll()
                         .requestMatchers("/api/students/register").permitAll()
                         .requestMatchers("/api/facultySupervisors/register").permitAll()
-
                         .requestMatchers("/api/hrmanagers/register").permitAll()
                         .requestMatchers("/api/companysupervisors/register").permitAll()
                         .requestMatchers("/ws/**").permitAll()
@@ -57,20 +56,25 @@ public class SecurityConfig {
     }
 
     @Bean
-    AuthenticationManager authenticationManager(UserDetailsService userDetailsService) {
+    public AuthenticationManager authenticationManager(UserDetailsService userDetailsService) {
+        // Creates and configures a provider for user authentication
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
 
+        // Returns an authentication manager with the configured provider
         return new ProviderManager(List.of(provider));
     }
 
     public static String getAuthenticatedUserId() {
+        // Retrieves authentication details from the security context
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        // Extracts the username if authentication is valid
         if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
-            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            return userDetails.getUsername();
+            return ((UserDetails) authentication.getPrincipal()).getUsername();
         }
+
         return null;
     }
 

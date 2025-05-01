@@ -73,7 +73,7 @@ public class UserService implements UserDetailsService {
     }
 
     public String findEmailById(String id) {
-        String[] collections = { "facultySupervisors", "companySupervisors" };
+        String[] collections = { "facultySupervisors", "companySupervisors", "students" };
 
         for (String collection : collections) {
             Query query = new Query(Criteria.where("_id").is(id));
