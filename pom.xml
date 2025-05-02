@@ -42,7 +42,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native</artifactId>
+            <version>1.0.0-beta7</version>
+        </dependency>
 
         <!-- Spring Data MongoDB for storing in-app notifications -->
         <dependency>

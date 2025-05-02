@@ -3,6 +3,8 @@ package com.internlink.internlink.controller;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.internlink.internlink.model.Internship;
 import com.internlink.internlink.service.AuthService;
+import com.internlink.internlink.service.InteractionService;
 import com.internlink.internlink.service.InternshipService;
 import com.internlink.internlink.service.StudentService;
 
@@ -35,6 +38,8 @@ public class InternshipController {
     private StudentService studentService;
     @Autowired
     private InternshipService internshipService;
+    @Autowired
+    private InteractionService interactionService;
 
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('HR_MANAGER')")
@@ -67,36 +72,45 @@ public class InternshipController {
     }
 
     @GetMapping("/recommend")
-    @PreAuthorize("hasRole('STUDENT')") // Ensures only students can access this endpoint
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<Map<String, Object>> recommendInternships(
             @RequestParam String studentId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "5") int limit) {
         try {
-            // Fetch student's embedding vector for recommendation calculations
+            // 1. Fetch embedding and major
             List<Float> studentEmbedding = studentService.getStudentEmbedding(studentId);
-            System.out
-                    .println("Student embedding fetched: " + (studentEmbedding != null ? "Success" : "Null or empty"));
-            // Retrieve student's major for relevance in recommendations
             String studentMajor = studentService.getStudentMajor(studentId);
-            // Get recommended internships based on student's embedding and major
-            List<Internship> allInternships = internshipService.getRecommendedInternships(studentEmbedding,
-                    studentMajor);
-            // Implement pagination logic
-            int startIndex = (page - 1) * limit;
-            int endIndex = Math.min(startIndex + limit, allInternships.size());
-            List<Internship> internshipsForPage = allInternships.subList(startIndex, endIndex);
 
-            // Prepare response map with internship data and pagination details
+            // 2. Get all recommended internships
+            List<Internship> allInternships = internshipService.recommendForStudent(studentId);
+
+            // 3. Get internships already interacted with
+            List<Internship> interactedInternships = interactionService.findInteractedInternships(studentId);
+            Set<String> interactedIds = interactedInternships.stream()
+                    .map(Internship::getId)
+                    .collect(Collectors.toSet());
+
+            // 4. Filter out interacted internships
+            List<Internship> filteredInternships = allInternships.stream()
+                    .filter(internship -> !interactedIds.contains(internship.getId()))
+                    .collect(Collectors.toList());
+
+            // 5. Pagination logic
+            int startIndex = (page - 1) * limit;
+            int endIndex = Math.min(startIndex + limit, filteredInternships.size());
+            List<Internship> internshipsForPage = filteredInternships.subList(startIndex, endIndex);
+
+            // 6. Build response
             Map<String, Object> response = new HashMap<>();
             response.put("internships", internshipsForPage);
-            int totalPages = Math.max(1, (int) Math.ceil((double) allInternships.size() / limit));
+            int totalPages = Math.max(1, (int) Math.ceil((double) filteredInternships.size() / limit));
             response.put("totalPages", totalPages);
             response.put("currentPage", page);
 
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
-            // Handle unexpected errors gracefully
             System.err.println("Error in recommendInternships: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.internalServerError().build();
@@ -173,7 +187,17 @@ public class InternshipController {
         try {
             Internship internship = internshipService.getInternshipById(id);
             if (internship != null) {
+                String studentId = authService.getAuthenticatedUserId();
+                String role = authService.getAuthenticatedUserRole();
+                if (role != null && role.toUpperCase().contains("STUDENT") && studentId != null) {
+                    boolean alreadyViewed = interactionService.interactionExists(studentId, id, "viewed");
+                    if (!alreadyViewed) {
+                        interactionService.saveInteraction(studentId, id, "viewed");
+                    }
+                }
+
                 return ResponseEntity.ok(internship);
+
             } else {
                 return ResponseEntity.notFound().build();
             }

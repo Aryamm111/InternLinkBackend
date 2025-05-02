@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -25,6 +27,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.internlink.internlink.model.Internship;
 import com.mongodb.BasicDBObject;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.result.UpdateResult;
 
 import ai.djl.translate.TranslateException;
@@ -38,6 +41,8 @@ public class InternshipService {
     private MongoTemplate mongoTemplate;
     @Autowired
     private StudentService studentService;
+    @Autowired
+    private InteractionService interactionService;
 
     public void createInternship(Internship internship) {
         mongoTemplate.save(internship);
@@ -90,39 +95,66 @@ public class InternshipService {
         return mongoTemplate.find(query, Internship.class);
     }
 
-    public List<Internship> getRecommendedInternships(List<Float> studentEmbedding, String studentMajor) {
-        // Validate that the embedding is not null or empty
-        if (studentEmbedding == null || studentEmbedding.isEmpty()) {
-            System.err.println("Invalid student embedding: " + studentEmbedding);
-            throw new IllegalArgumentException("Invalid student embedding!");
+    public List<Internship> recommendForStudent(String studentId) {
+        // 1. Get profile vector
+        INDArray profileVector = studentService.getStudentProfileVector(studentId);
+
+        // 2. Get interacted internships
+        List<Internship> interacted = interactionService.findInteractedInternships(studentId);
+
+        INDArray finalVector;
+        if (interacted.isEmpty()) {
+            finalVector = profileVector;
+        } else {
+            INDArray combinedVector = Nd4j.zeros(384);
+            for (Internship i : interacted) {
+                combinedVector.addi(toINDArray(i.getEmbedding()));
+            }
+            combinedVector.divi(interacted.size());
+            finalVector = profileVector.mul(0.7).add(combinedVector.mul(0.3));
         }
 
-        // Build the vector search query to find similar internships
+        // Convert INDArray to List<Float>
+        List<Float> finalVectorList = toList(finalVector);
+
+        // Use MongoTemplate directly to get the collection
+        MongoCollection<Document> collection = mongoTemplate.getCollection("internships");
+
         Document vectorSearchQuery = new Document("$vectorSearch",
-                new Document("index", "internship_index2")
-                        .append("queryVector", studentEmbedding)
+                new Document("index", "internship_index2") // use your actual index name
+                        .append("queryVector", finalVectorList)
                         .append("path", "embedding")
                         .append("numCandidates", 300)
-                        .append("k", 15)
-                        .append("limit", 12));
+                        .append("k", 20)
+                        .append("limit", 15));
 
-        // Filter results to only include active internships matching the student's
-        // major
-        Document matchStage = new Document("$match", new Document("status", "active")
-                .append("majors", studentMajor));
-        // Exclude the embedding field from the final result
-        Document projectStage = new Document("$project",
-                new Document("embedding", 0));
+        Document matchStage = new Document("$match", new Document("status", "active"));
+        Document projectStage = new Document("$project", new Document("embedding", 0));
 
-        // Run the aggregation pipeline on the internships collection
-        List<Document> results = mongoTemplate.getCollection("internships")
+        List<Document> rawResults = collection
                 .aggregate(List.of(vectorSearchQuery, matchStage, projectStage))
                 .into(new ArrayList<>());
-        // Convert MongoDB documents into Internship objects
-        List<Internship> internships = results.stream()
+
+        // Convert to Internship objects using Spring's converter
+        return rawResults.stream()
                 .map(doc -> mongoTemplate.getConverter().read(Internship.class, doc))
                 .toList();
-        return internships;
+    }
+
+    private INDArray toINDArray(List<Float> vector) {
+        float[] floatArray = new float[vector.size()];
+        for (int i = 0; i < vector.size(); i++) {
+            floatArray[i] = vector.get(i);
+        }
+        return Nd4j.create(floatArray);
+    }
+
+    private List<Float> toList(INDArray array) {
+        float[] floats = array.toFloatVector();
+        List<Float> list = new ArrayList<>(floats.length);
+        for (float f : floats)
+            list.add(f);
+        return list;
     }
 
     public List<Internship> getUploadedInternships(String hrManagerId) {

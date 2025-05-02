@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.bson.Document;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -42,6 +44,19 @@ public class StudentService {
         return Map.of(
                 "facultySupervisorId", student.getString("facultySupervisorId"),
                 "companySupervisorId", student.getString("companySupervisorId"));
+    }
+
+    public INDArray getStudentProfileVector(String studentId) {
+        Student student = mongoTemplate.findById(studentId, Student.class);
+        if (student == null || student.getEmbedding() == null) {
+            return Nd4j.zeros(384); // Or handle error appropriately
+        }
+        List<Float> embedding = student.getEmbedding();
+        float[] vector = new float[embedding.size()];
+        for (int i = 0; i < embedding.size(); i++) {
+            vector[i] = embedding.get(i);
+        }
+        return Nd4j.create(vector);
     }
 
     public String getStudentMajor(String studentId) {
