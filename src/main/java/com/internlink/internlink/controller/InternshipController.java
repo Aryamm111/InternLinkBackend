@@ -92,10 +92,7 @@ public class InternshipController {
                     .collect(Collectors.toSet());
 
             // 4. Filter out interacted internships
-            List<Internship> filteredInternships = allInternships.stream()
-                    .filter(internship -> !interactedIds.contains(internship.getId()))
-                    .collect(Collectors.toList());
-
+            List<Internship> filteredInternships = allInternships;
             // 5. Pagination logic
             int startIndex = (page - 1) * limit;
             int endIndex = Math.min(startIndex + limit, filteredInternships.size());

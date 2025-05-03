@@ -102,13 +102,6 @@ public class StudentService {
         return mongoTemplate.save(student);
     }
 
-    public void deleteStudent(String studentId) {
-        Student student = getStudentById(studentId);
-        if (student != null) {
-            mongoTemplate.remove(student);
-        }
-    }
-
     public boolean existsById(String studentId) {
         return mongoTemplate.exists(new Query(Criteria.where("_id").is(studentId)), Student.class);
     }
@@ -131,21 +124,6 @@ public class StudentService {
 
         System.out.println("Embedding successfully fetched for student ID: " + studentId);
         return embedding;
-    }
-
-    public boolean assignCompanySupervisorToStudents(String supervisorId, List<String> studentIds) {
-        if (studentIds == null || studentIds.isEmpty()) {
-            return false;
-        }
-
-        Query query = new Query(Criteria.where("_id").in(studentIds)); // `_id` is now `studentId`
-        Update update = new Update().set("companySupervisorId", supervisorId); // Set company supervisor
-
-        // Update all matching students
-        var result = mongoTemplate.updateMulti(query, update, Student.class);
-
-        // Return true if any students were updated
-        return result.getModifiedCount() > 0;
     }
 
     public Student assignFacultySupervisor(String studentId, String facultySupervisorId) {
