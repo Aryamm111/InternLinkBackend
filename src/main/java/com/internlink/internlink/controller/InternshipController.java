@@ -80,7 +80,6 @@ public class InternshipController {
         try {
             // 1. Fetch embedding and major
             List<Float> studentEmbedding = studentService.getStudentEmbedding(studentId);
-            String studentMajor = studentService.getStudentMajor(studentId);
 
             // 2. Get all recommended internships
             List<Internship> allInternships = internshipService.recommendForStudent(studentId);
@@ -156,6 +155,7 @@ public class InternshipController {
     @PreAuthorize("hasRole('STUDENT')")
     public List<Internship> searchInternships(
             @RequestParam(required = false) String title,
+            @RequestParam(required = false) String location,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
         String studentId2 = authService.getAuthenticatedUserId();
@@ -164,7 +164,7 @@ public class InternshipController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not authenticated");
         }
 
-        return internshipService.searchInternships(title, studentId2, page, size);
+        return internshipService.searchInternships(title, location, studentId2, page, size);
     }
 
     @PreAuthorize("hasRole('HR_MANAGER')")

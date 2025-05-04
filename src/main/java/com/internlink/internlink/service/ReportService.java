@@ -49,7 +49,7 @@ public class ReportService {
         mongoTemplate.save(report);
     }
 
-    public List<Report> getReportsByStudentId(String studentId) {
+    public List<Report> viewReport(String studentId) {
         Query query = new Query(Criteria.where("studentId").is(studentId));
         return mongoTemplate.find(query, Report.class);
     }

@@ -73,7 +73,7 @@ public class ApplicationController {
     public ResponseEntity<List<Application>> getStudentApplications(Authentication authentication) {
         try {
             String studentId = authService.getAuthenticatedUserId();
-            List<Application> applications = applicationService.findApplicationsByStudentId(studentId);
+            List<Application> applications = applicationService.viewApplication(studentId);
             return ResponseEntity.ok(applications);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -103,7 +103,7 @@ public class ApplicationController {
             @RequestParam String status) {
         try {
             Application application = applicationService.getApplicationById(applicationId);
-            Student student = studentService.getStudentById(application.getStudentId()); // You need this for email
+            Student student = studentService.getStudentById(application.getStudentId());
 
             if ("Accepted".equalsIgnoreCase(status)) {
                 Internship internship = internshipService.getInternshipById(application.getInternshipId());

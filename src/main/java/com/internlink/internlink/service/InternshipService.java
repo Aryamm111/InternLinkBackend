@@ -48,10 +48,6 @@ public class InternshipService {
         mongoTemplate.save(internship);
     }
 
-    public List<Internship> getAllInternships() {
-        return mongoTemplate.findAll(Internship.class);
-    }
-
     public void saveInternship(Internship internship) {
         mongoTemplate.save(internship);
     }
@@ -70,25 +66,24 @@ public class InternshipService {
         mongoTemplate.save(updatedInternship); // This acts as an update
     }
 
-    public List<Internship> searchInternships(String title, String studentId, int page, int size) {
+    public List<Internship> searchInternships(String title, String location, String studentId, int page, int size) {
         Query query = new Query();
-        // Include only active internships
         query.addCriteria(Criteria.where("status").is("active"));
-        // Fetch the student's major from the UserService
-        String studentMajor = studentService.getStudentMajor(studentId);
 
+        String studentMajor = studentService.getStudentMajor(studentId);
         if (studentMajor == null || studentMajor.isEmpty()) {
-            // If the student does not have a major or it could not be fetched, return an
-            // empty list
             return new ArrayList<>();
         }
-        // Filter internships by the student's major
         query.addCriteria(Criteria.where("majors").in(studentMajor));
 
-        // Include title filter if provided
         if (title != null && !title.isEmpty()) {
             query.addCriteria(Criteria.where("$text").is(new BasicDBObject("$search", title)));
         }
+
+        if (location != null && !location.isEmpty()) {
+            query.addCriteria(Criteria.where("location").is(location));
+        }
+
         Pageable pageable = PageRequest.of(page - 1, size);
         query.with(pageable);
 
@@ -96,46 +91,48 @@ public class InternshipService {
     }
 
     public List<Internship> recommendForStudent(String studentId) {
-        // 1. Get profile vector
+        // Get the student's profile embedding vector
         INDArray profileVector = studentService.getStudentProfileVector(studentId);
-
-        // 2. Get interacted internships
+        // Retrieve internships the student has interacted with
         List<Internship> interacted = interactionService.findInteractedInternships(studentId);
 
         INDArray finalVector;
         if (interacted.isEmpty()) {
-            finalVector = profileVector;
+            finalVector = profileVector; // If no interactions, use only profile vector
         } else {
+            // Average the embeddings of interacted internships
             INDArray combinedVector = Nd4j.zeros(384);
             for (Internship i : interacted) {
                 combinedVector.addi(toINDArray(i.getEmbedding()));
             }
             combinedVector.divi(interacted.size());
+            // Combine profile vector with interacted internship embeddings
             finalVector = profileVector.mul(0.7).add(combinedVector.mul(0.3));
         }
-
-        // Convert INDArray to List<Float>
+        // Convert final embedding to a list format
         List<Float> finalVectorList = toList(finalVector);
 
-        // Use MongoTemplate directly to get the collection
+        // Get internship collection from MongoDB
         MongoCollection<Document> collection = mongoTemplate.getCollection("internships");
 
+        // Build vector search query using MongoDB's indexing
         Document vectorSearchQuery = new Document("$vectorSearch",
-                new Document("index", "internship_index2") // use your actual index name
+                new Document("index", "internship_index2") // Use your actual index name
                         .append("queryVector", finalVectorList)
                         .append("path", "embedding")
                         .append("numCandidates", 300)
                         .append("k", 20)
                         .append("limit", 15));
 
+        // Filter for active internships
         Document matchStage = new Document("$match", new Document("status", "active"));
-        Document projectStage = new Document("$project", new Document("embedding", 0));
-
+        Document projectStage = new Document("$project", new Document("embedding", 0)); // Exclude embedding from
+                                                                                        // results
+        // Execute query and retrieve results
         List<Document> rawResults = collection
                 .aggregate(List.of(vectorSearchQuery, matchStage, projectStage))
                 .into(new ArrayList<>());
-
-        // Convert to Internship objects using Spring's converter
+        // Convert raw MongoDB documents to Internship objects
         return rawResults.stream()
                 .map(doc -> mongoTemplate.getConverter().read(Internship.class, doc))
                 .toList();
