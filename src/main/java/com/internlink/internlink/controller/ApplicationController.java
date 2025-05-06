@@ -21,6 +21,7 @@ import com.internlink.internlink.model.Internship;
 import com.internlink.internlink.model.Student;
 import com.internlink.internlink.service.ApplicationService;
 import com.internlink.internlink.service.AuthService;
+import com.internlink.internlink.service.InteractionService;
 import com.internlink.internlink.service.InternshipService;
 import com.internlink.internlink.service.MailService;
 import com.internlink.internlink.service.StudentService;
@@ -39,6 +40,8 @@ public class ApplicationController {
     private StudentService studentService;
     @Autowired
     private InternshipService internshipService;
+    @Autowired
+    private InteractionService interactionService;
 
     // Allows a student to apply to a specific internship
     @PostMapping("/{internshipId}/apply")
@@ -55,6 +58,8 @@ public class ApplicationController {
             // Pass all files to the service method
             applicationService.saveApplication(internshipId, studentId, internshipTitle, applicationLetter,
                     academicRecord, cv, skills);
+            interactionService.saveInteraction(studentId, internshipId, "applied");
+
             return ResponseEntity.ok("Application submitted successfully!");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

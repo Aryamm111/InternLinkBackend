@@ -32,7 +32,17 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-mongodb</artifactId>
         </dependency>
-        
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+            <version>1.0.0-beta7</version> <!-- Use the latest stable version -->
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native</artifactId>
+            <version>1.0.0-beta7</version>
+        </dependency>
+
         <!-- Spring Boot Mail for email sending -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

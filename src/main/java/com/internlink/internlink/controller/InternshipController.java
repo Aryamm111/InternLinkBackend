@@ -23,6 +23,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.internlink.internlink.model.Internship;
 import com.internlink.internlink.service.AuthService;
+import com.internlink.internlink.service.InteractionService;
 import com.internlink.internlink.service.InternshipService;
 import com.internlink.internlink.service.StudentService;
 
@@ -35,6 +36,8 @@ public class InternshipController {
     private StudentService studentService;
     @Autowired
     private InternshipService internshipService;
+    @Autowired
+    private InteractionService interactionService;
 
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('HR_MANAGER')")
@@ -173,7 +176,17 @@ public class InternshipController {
         try {
             Internship internship = internshipService.getInternshipById(id);
             if (internship != null) {
+                String studentId = authService.getAuthenticatedUserId();
+                String role = authService.getAuthenticatedUserRole();
+                if (role != null && role.toUpperCase().contains("STUDENT") && studentId != null) {
+                    boolean alreadyViewed = interactionService.interactionExists(studentId, id, "viewed");
+                    if (!alreadyViewed) {
+                        interactionService.saveInteraction(studentId, id, "viewed");
+                    }
+                }
+
                 return ResponseEntity.ok(internship);
+
             } else {
                 return ResponseEntity.notFound().build();
             }
