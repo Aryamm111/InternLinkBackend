@@ -85,17 +85,18 @@ public class ApplicationService {
         return mongoTemplate.find(query, Application.class);
     }
 
-    public List<Application> findApplicationsByStudentId(String studentId) {
+    public List<Application> viewApplication(String studentId) { // previously find application by student id
         Query query = new Query();
         query.addCriteria(Criteria.where("studentId").is(studentId));
         return mongoTemplate.find(query, Application.class, "applications");
     }
 
-    public List<Application> findApplicationsByInternshipId(String internshipId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("internshipId").is(internshipId));
-        return mongoTemplate.find(query, Application.class, "applications");
-    }
+    // public List<Application> findApplicationsByInternshipId(String internshipId)
+    // {
+    // Query query = new Query();
+    // query.addCriteria(Criteria.where("internshipId").is(internshipId));
+    // return mongoTemplate.find(query, Application.class, "applications");
+    // }
 
     public void updateStatus(String applicationId, String status) {
         if (!status.equals("Accepted") && !status.equals("Rejected") && !status.equals("Pending")) {

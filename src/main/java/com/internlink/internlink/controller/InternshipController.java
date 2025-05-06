@@ -3,6 +3,8 @@ package com.internlink.internlink.controller;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -70,36 +72,41 @@ public class InternshipController {
     }
 
     @GetMapping("/recommend")
-    @PreAuthorize("hasRole('STUDENT')") // Ensures only students can access this endpoint
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<Map<String, Object>> recommendInternships(
             @RequestParam String studentId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "5") int limit) {
         try {
-            // Fetch student's embedding vector for recommendation calculations
+            // 1. Fetch embedding and major
             List<Float> studentEmbedding = studentService.getStudentEmbedding(studentId);
-            System.out
-                    .println("Student embedding fetched: " + (studentEmbedding != null ? "Success" : "Null or empty"));
-            // Retrieve student's major for relevance in recommendations
-            String studentMajor = studentService.getStudentMajor(studentId);
-            // Get recommended internships based on student's embedding and major
-            List<Internship> allInternships = internshipService.getRecommendedInternships(studentEmbedding,
-                    studentMajor);
-            // Implement pagination logic
-            int startIndex = (page - 1) * limit;
-            int endIndex = Math.min(startIndex + limit, allInternships.size());
-            List<Internship> internshipsForPage = allInternships.subList(startIndex, endIndex);
 
-            // Prepare response map with internship data and pagination details
+            // 2. Get all recommended internships
+            List<Internship> allInternships = internshipService.recommendForStudent(studentId);
+
+            // 3. Get internships already interacted with
+            List<Internship> interactedInternships = interactionService.findInteractedInternships(studentId);
+            Set<String> interactedIds = interactedInternships.stream()
+                    .map(Internship::getId)
+                    .collect(Collectors.toSet());
+
+            // 4. Filter out interacted internships
+            List<Internship> filteredInternships = allInternships;
+            // 5. Pagination logic
+            int startIndex = (page - 1) * limit;
+            int endIndex = Math.min(startIndex + limit, filteredInternships.size());
+            List<Internship> internshipsForPage = filteredInternships.subList(startIndex, endIndex);
+
+            // 6. Build response
             Map<String, Object> response = new HashMap<>();
             response.put("internships", internshipsForPage);
-            int totalPages = Math.max(1, (int) Math.ceil((double) allInternships.size() / limit));
+            int totalPages = Math.max(1, (int) Math.ceil((double) filteredInternships.size() / limit));
             response.put("totalPages", totalPages);
             response.put("currentPage", page);
 
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
-            // Handle unexpected errors gracefully
             System.err.println("Error in recommendInternships: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.internalServerError().build();
@@ -148,6 +155,7 @@ public class InternshipController {
     @PreAuthorize("hasRole('STUDENT')")
     public List<Internship> searchInternships(
             @RequestParam(required = false) String title,
+            @RequestParam(required = false) String location,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
         String studentId2 = authService.getAuthenticatedUserId();
@@ -156,7 +164,7 @@ public class InternshipController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not authenticated");
         }
 
-        return internshipService.searchInternships(title, studentId2, page, size);
+        return internshipService.searchInternships(title, location, studentId2, page, size);
     }
 
     @PreAuthorize("hasRole('HR_MANAGER')")

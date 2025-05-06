@@ -61,7 +61,7 @@ public class ReportController {
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<List<Report>> getMyReports() {
         String studentId = authService.getAuthenticatedUserId();
-        List<Report> reports = reportService.getReportsByStudentId(studentId);
+        List<Report> reports = reportService.viewReport(studentId);
         return ResponseEntity.ok(reports);
     }
 
